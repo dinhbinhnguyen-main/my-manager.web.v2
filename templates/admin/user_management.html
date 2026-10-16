@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Nhân Sự | Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Quản Trị Nhân Sự & Phân Quyền Hệ Thống</h2>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem;">
+                Kích hoạt tài khoản mới đăng ký, điều chỉnh vai trò và phân nhóm kinh doanh
+            </p>
+        </div>
+
+        <div>
+            <a href="{{ url_for('admin.all_approvals') }}" class="btn btn-warning">
+                📋 Xem Tất Cả Yêu Cầu Chờ Duyệt Toàn Sàn
+            </a>
+        </div>
+    </div>
+
+    <!-- BỘ LỌC NHÂN SỰ -->
+    <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
+        <form method="GET" action="{{ url_for('admin.user_management') }}" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="min-width: 180px;">
+                <select name="role" class="form-control">
+                    <option value="">Tất cả vai trò</option>
+                    {% for r in all_roles %}
+                        <option value="{{ r.value }}" {% if current_role_filter == r.value %}selected{% endif %}>
+                            {{ r.value|upper }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="min-width: 180px;">
+                <select name="is_active" class="form-control">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="1" {% if current_active_filter == '1' %}selected{% endif %}>Đã kích hoạt (Active)</option>
+                    <option value="0" {% if current_active_filter == '0' %}selected{% endif %}>Chờ kích hoạt (Inactive)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">Lọc danh sách</button>
+            <a href="{{ url_for('admin.user_management') }}" class="btn btn-secondary btn-sm">Đặt lại</a>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tên nhân sự / Username</th>
+                    <th>Hotline liên hệ</th>
+                    <th>Vai trò hiện tại</th>
+                    <th>Nhóm phụ trách</th>
+                    <th>Trạng thái tài khoản</th>
+                    <th>Ngày tham gia</th>
+                    <th style="text-align: right;">Cập nhật & Phân quyền</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                {% if u.logo_url %}
+                                    <img src="{{ u.logo_url }}" alt="{{ u.username }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #cbd5e1;">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/default_logo.png') }}" alt="{{ u.username }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #cbd5e1;">
+                                {% endif %}
+                                <div>
+                                    <div style="font-weight: 700; color: #0f172a;">{{ u.username }}</div>
+                                    <div style="font-size: 0.75rem; color: #64748b;">ID: {{ u.id[:8] }}...</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td style="font-weight: 600; color: #d97706;">
+                            {{ u.phone_number or 'Chưa cập nhật' }}
+                        </td>
+
+                        <td>
+                            <span class="badge {% if u.role.value == 'admin' %}badge-danger{% elif u.role.value == 'manager' %}badge-warning{% elif u.role.value == 'probation' %}badge-secondary{% else %}badge-primary{% endif %}">
+                                {{ u.role.value|upper }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong style="color: #1e40af;">{{ u.group_id or 'Chưa gán nhóm' }}</strong>
+                        </td>
+
+                        <td>
+                            {% if u.is_active %}
+                                <span class="badge badge-success">✓ Đã Kích Hoạt</span>
+                            {% else %}
+                                <span class="badge badge-danger">⏳ Chờ Kích Hoạt</span>
+                            {% endif %}
+                        </td>
+
+                        <td style="font-size: 0.8rem; color: #64748b;">
+                            {{ u.created_at }}
+                        </td>
+
+                        <td style="text-align: right;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                                <!-- NÚT BẬT / TẮT KÍCH HOẠT (LUỒNG QUY TRÌNH ADMIN) -->
+                                <form method="POST" action="{{ url_for('admin.toggle_user_active', user_id=u.id) }}" style="display: inline;">
+                                    {% if u.is_active %}
+                                        <button type="submit" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fca5a5;" title="Vô hiệu hóa tài khoản" {% if u.id == current_user.id %}disabled title="Không thể tự vô hiệu hóa tài khoản của chính mình"{% endif %}>
+                                            Khóa
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-sm btn-success" title="Duyệt kích hoạt tài khoản">
+                                            ✓ Kích hoạt
+                                        </button>
+                                    {% endif %}
+                                </form>
+
+                                <!-- NÚT SỬA VAI TRÒ / NHÓM -->
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="openEditUserModal('{{ u.id }}', '{{ u.username }}', '{{ u.role.value }}', '{{ u.group_id }}')">
+                                    ⚙️ Sửa quyền
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL SỬA VAI TRÒ & NHÓM -->
+<div id="editUserModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; width: 90%; max-width: 440px; border-radius: 0.75rem; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">
+            Cập Nhật Quyền & Nhóm
+        </h3>
+        <p id="editUserModalName" style="color: #64748b; font-size: 0.85rem; margin-bottom: 1.25rem;"></p>
+
+        <form id="editUserForm" method="POST">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="modal_role">Vai trò (UserRole)</label>
+                <select id="modal_role" name="role" class="form-control" required>
+                    {% for r in all_roles %}
+                        <option value="{{ r.value }}">{{ r.value|upper }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label" for="modal_group_id">Mã nhóm phụ trách (group_id)</label>
+                <input type="text" id="modal_group_id" name="group_id" class="form-control" placeholder="Ví dụ: GROUP_A, TEAM_LAM_VIEN" required>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openEditUserModal(userId, username, role, groupId) {
+        const modal = document.getElementById('editUserModal');
+        const form = document.getElementById('editUserForm');
+        document.getElementById('editUserModalName').textContent = 'Nhân sự: ' + username;
+        document.getElementById('modal_role').value = role;
+        document.getElementById('modal_group_id').value = groupId;
+
+        form.action = '/dashboard/admin/users/' + userId + '/update';
+        modal.style.display = 'flex';
+    }
+
+    function closeEditUserModal() {
+        document.getElementById('editUserModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

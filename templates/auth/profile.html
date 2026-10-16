@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Hồ Sơ Cá Nhân | Thương Hiệu Môi Giới{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 2rem auto;">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Cá Nhân Hóa Thương Hiệu Kinh Doanh</h2>
+            <span class="badge badge-info">{{ user.role.value|upper }}</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; padding: 1.25rem; background: #f8fafc; border-radius: 0.5rem; border: 1px solid var(--border);">
+            {% if user.logo_url %}
+                <img src="{{ user.logo_url }}" alt="Logo của bạn" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #eab308; background: #fff;">
+            {% else %}
+                <img src="{{ url_for('static', filename='uploads/default_logo.png') }}" alt="Logo mặc định" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #cbd5e1; background: #fff;">
+            {% endif %}
+            <div>
+                <h3 style="font-size: 1.2rem; font-weight: 700; color: #0f172a;">{{ user.username }}</h3>
+                <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.2rem;">Nhóm phụ trách: <strong>{{ user.group_id or 'Chưa phân nhóm' }}</strong></p>
+                <p style="color: #059669; font-size: 0.8rem; font-weight: 600; margin-top: 0.2rem;">Trạng thái: Đang hoạt động (Active)</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.profile') }}" enctype="multipart/form-data">
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label class="form-label" for="phone_number">Số điện thoại liên hệ khách hàng</label>
+                <input type="tel" id="phone_number" name="phone_number" class="form-control" value="{{ user.phone_number }}" required>
+                <small style="color: #64748b; font-size: 0.8rem;">Khách hàng xem bài sẽ gọi điện hoặc kết nối Zalo qua số này.</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label class="form-label" for="logo_file">Tải lên Logo / Ảnh đại diện cá nhân mới</label>
+                <input type="file" id="logo_file" name="logo_file" class="form-control" accept="image/png, image/jpeg, image/webp">
+                <small style="color: #64748b; font-size: 0.8rem;">Logo này tự động đóng dấu nước/đính kèm vào từng thẻ BĐS bạn phụ trách.</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Lưu Thay Đổi
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

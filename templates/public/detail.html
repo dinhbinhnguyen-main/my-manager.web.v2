@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.title }} | Chi Tiết Bất Động Sản{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('public.index') }}" class="btn btn-sm btn-outline">&larr; Quay lại danh sách sản phẩm</a>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+    <!-- CỘT TRÁI: HÌNH ẢNH & THÔNG SỐ KỸ THUẬT -->
+    <div>
+        <div class="panel" style="padding: 0; overflow: hidden;">
+            {% if property.image_url %}
+                <img src="{{ property.image_url }}" alt="{{ property.title }}" style="width: 100%; height: 420px; object-fit: cover;">
+            {% else %}
+                <div style="width: 100%; height: 350px; background: linear-gradient(135deg, #1e293b, #0f172a); display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #cbd5e1;">
+                    🏡
+                </div>
+            {% endif %}
+
+            <div style="padding: 1.5rem;">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <span class="badge badge-success">{{ property.transaction_type|upper }}</span>
+                    <span class="badge badge-primary">{{ property.category|clean_title }}</span>
+                    <span class="badge badge-warning">{{ property.status|upper }}</span>
+                </div>
+
+                <h1 style="font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">
+                    {{ property.title }}
+                </h1>
+
+                <div style="font-size: 1.6rem; font-weight: 800; color: #d97706; margin-bottom: 1.5rem;">
+                    {{ property.price }} {{ property.unit|clean_title }}
+                    <span style="font-size: 1rem; color: #64748b; font-weight: normal;">({{ (property.price / property.area)|round(2) if property.area else 0 }} {{ property.unit|clean_title }}/m²)</span>
+                </div>
+
+                <div class="panel-header" style="margin-top: 1.5rem;">
+                    <h3 class="panel-title">Thông Số Chi Tiết</h3>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Diện tích</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.area }} m²</div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Vị trí đường / Hẻm</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.building_line|clean_title }}</div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Pháp lý</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.legal|clean_title }}</div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Kết cấu</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.structure }} tầng</div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Nội thất bàn giao</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.furniture|clean_title }}</div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Địa chỉ hành chính</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.ward|clean_title }}, Đà Lạt</div>
+                    </div>
+                </div>
+
+                {% if property.function %}
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem;">Công năng sử dụng:</h4>
+                        <p style="color: #334155;">{{ property.function }}</p>
+                    </div>
+                {% endif %}
+
+                <div>
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem;">Mô tả chi tiết:</h4>
+                    <div style="color: #334155; line-height: 1.7; white-space: pre-line;">
+                        {{ property.description }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: KHỐI LIÊN HỆ ĐỘC QUYỀN (LEAD PROTECTION) -->
+    <div>
+        <div class="panel" style="border: 2px solid #eab308; background: #ffffff; position: sticky; top: 5rem;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <img src="{{ property.author_logo }}" alt="{{ property.author_name }}" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid #eab308; margin-bottom: 0.75rem; box-shadow: var(--shadow-md);">
+                <h3 style="font-size: 1.3rem; font-weight: 800; color: #0f172a;">{{ property.author_name }}</h3>
+                <span class="badge badge-warning">Chuyên Viên Phụ Trách Sản Phẩm</span>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.35rem;">Nhóm: {{ property.author_group or 'Hội sở' }}</p>
+            </div>
+
+            <div style="background: #fefce8; border: 1px solid #fef08a; padding: 1rem; border-radius: 0.5rem; text-align: center; margin-bottom: 1.5rem;">
+                <div style="font-size: 0.85rem; color: #854d0e; font-weight: 600;">Hotline tư vấn độc quyền:</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: #d97706; margin-top: 0.25rem;">
+                    {{ property.author_phone or 'Đang cập nhật' }}
+                </div>
+            </div>
+
+            {% if property.author_phone %}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="tel:{{ property.author_phone }}" class="btn btn-success" style="font-size: 1.05rem; padding: 0.85rem; font-weight: 700;">
+                        📞 Gọi Điện Trực Tiếp
+                    </a>
+                    <a href="https://zalo.me/{{ property.author_phone|replace(' ', '')|replace('.', '') }}" target="_blank" class="btn btn-primary" style="font-size: 1.05rem; padding: 0.85rem; font-weight: 700;">
+                        💬 Nhắn Tin Zalo
+                    </a>
+                </div>
+            {% endif %}
+
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: #64748b; text-align: center;">
+                🛡️ Cam kết thông tin minh bạch & kết nối trực tiếp với đầu chủ sản phẩm.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Hàng Đợi Duyệt Bài | Cấp Quản Lý{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">
+                {% if is_admin_view %}
+                    Duyệt Bài Toàn Bộ Hệ Thống (Admin Control)
+                {% else %}
+                    Danh Sách Phê Duyệt Nhóm: {{ user.group_id }} (Manager)
+                {% endif %}
+            </h2>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem;">
+                Kiểm duyệt chất lượng sản phẩm trước khi đưa ra thị trường
+            </p>
+        </div>
+
+        <div>
+            <span class="badge badge-warning" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                Đang chờ xử lý: {{ pending_items|length }} yêu cầu
+            </span>
+        </div>
+    </div>
+
+    {% if pending_items %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Người đề xuất</th>
+                        <th>Loại yêu cầu</th>
+                        <th>Sản phẩm / Tiêu đề</th>
+                        <th>Khu vực & Giá</th>
+                        <th>Thời gian gửi</th>
+                        <th style="text-align: right;">Phê duyệt / Quyết định</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pending_items %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 700; color: #0f172a;">{{ item.author_name }}</div>
+                                <div style="font-size: 0.75rem; color: #64748b;">
+                                    Nhóm: <strong>{{ item.author_group }}</strong> | {{ item.author_role|upper }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: #d97706;">📞 {{ item.author_phone }}</div>
+                            </td>
+
+                            <td>
+                                {% if item.pending_action == 'create' %}
+                                    <span class="badge badge-primary">Tạo mới</span>
+                                {% elif item.pending_action == 'update' %}
+                                    <span class="badge badge-info">Cập nhật</span>
+                                {% elif item.pending_action == 'delete' %}
+                                    <span class="badge badge-danger">Xóa bài</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">{{ item.pending_action }}</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <div style="font-weight: 700; color: #0f172a;">{{ item.title }}</div>
+                                <div style="font-size: 0.8rem; color: #64748b;">
+                                    Loại: {{ item.category|clean_title }} | Pháp lý: {{ item.legal|clean_title }}
+                                </div>
+                            </td>
+
+                            <td>
+                                <div style="font-weight: 700; color: #d97706;">
+                                    {{ item.price }} {{ item.unit|clean_title }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #64748b;">
+                                    {{ item.area }} m² - {{ item.ward|clean_title }}
+                                </div>
+                            </td>
+
+                            <td style="font-size: 0.8rem; color: #64748b;">
+                                {{ item.updated_at }}
+                            </td>
+
+                            <td style="text-align: right;">
+                                <div style="display: flex; gap: 0.4rem; justify-content: flex-end; align-items: center;">
+                                    {% if item.pending_action == 'update' %}
+                                        <a href="{{ url_for('manager.review_diff', pending_id=item.id) }}" class="btn btn-sm btn-outline" style="border-color: #0284c7; color: #0284c7;" title="So sánh bản cũ vs mới">
+                                            🔍 So sánh
+                                        </a>
+                                    {% endif %}
+
+                                    <!-- NÚT DUYỆT -->
+                                    <form method="POST" action="{{ url_for('manager.approve', pending_id=item.id) }}" style="display: inline;" onsubmit="return confirm('Xác nhận PHÊ DUYỆT yêu cầu này?');">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            ✓ Duyệt
+                                        </button>
+                                    </form>
+
+                                    <!-- NÚT TỪ CHỐI -->
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="openRejectModal('{{ item.id }}', '{{ item.title }}')">
+                                        ✕ Từ chối
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 4rem 1rem; color: #64748b;">
+            <div style="font-size: 3rem; margin-bottom: 0.75rem;">🎉</div>
+            <p style="font-size: 1.1rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">Không có yêu cầu nào đang chờ duyệt.</p>
+            <p>Tất cả sản phẩm trong nhóm đã được xử lý hoàn tất.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- MODAL NHẬP LÝ DO TỪ CHỐI -->
+<div id="rejectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; width: 90%; max-width: 480px; border-radius: 0.75rem; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: #991b1b; margin-bottom: 0.5rem;">
+            Từ Chối Yêu Cầu Duyệt
+        </h3>
+        <p id="rejectModalTitle" style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;"></p>
+
+        <form id="rejectForm" method="POST">
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label class="form-label" for="reject_reason">Lý do từ chối (Gửi phản hồi cho nhân viên) *</label>
+                <textarea id="reject_reason" name="reject_reason" class="form-control" rows="4" placeholder="Ví dụ: Giá chưa đúng quy định, ảnh chụp bị mờ, thiếu thông tin pháp lý..." required></textarea>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">Hủy</button>
+                <button type="submit" class="btn btn-danger">Xác Nhận Từ Chối</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openRejectModal(pendingId, title) {
+        const modal = document.getElementById('rejectModal');
+        const form = document.getElementById('rejectForm');
+        const titleEl = document.getElementById('rejectModalTitle');
+
+        titleEl.textContent = 'Sản phẩm: ' + title;
+        form.action = '/dashboard/manager/approvals/' + pendingId + '/reject';
+        modal.style.display = 'flex';
+    }
+
+    function closeRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

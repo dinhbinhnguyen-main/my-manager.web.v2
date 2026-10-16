@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Sàn Bất Động Sản Đà Lạt | Dữ Liệu Tập Trung & Minh Bạch{% endblock %}
+
+{% block content %}
+<div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; border-radius: 1rem; padding: 2.5rem 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
+    <div style="max-width: 800px;">
+        <span class="badge badge-warning" style="margin-bottom: 0.75rem;">Hệ thống tập trung</span>
+        <h1 style="font-size: 2.2rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.75rem;">
+            Kho Dữ Liệu Bất Động Sản Đà Lạt
+        </h1>
+        <p style="color: #cbd5e1; font-size: 1.05rem; margin-bottom: 1.5rem;">
+            Toàn bộ sản phẩm được kiểm định chất lượng và cá nhân hóa số hotline + logo của nhân sự phụ trách.
+        </p>
+
+        <!-- BỘ LỌC TÌM KIẾM -->
+        <form method="GET" action="{{ url_for('public.index') }}" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); padding: 1.25rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.2);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+                <div>
+                    <input type="text" name="search" class="form-control" placeholder="Từ khóa, tên đường..." value="{{ search_query }}">
+                </div>
+
+                <div>
+                    <select name="category" class="form-control">
+                        <option value="">Tất cả loại hình</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.value }}" {% if current_category == cat.value %}selected{% endif %}>
+                                {{ cat.value|clean_title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <select name="transaction_type" class="form-control">
+                        <option value="">Loại giao dịch</option>
+                        {% for t in transaction_types %}
+                            <option value="{{ t.value }}" {% if current_transaction_type == t.value %}selected{% endif %}>
+                                {{ t.value|upper }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <select name="ward" class="form-control">
+                        <option value="">Khu vực Phường / Xã</option>
+                        {% for w in wards %}
+                            <option value="{{ w.value }}" {% if current_ward == w.value %}selected{% endif %}>
+                                {{ w.value|clean_title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn btn-warning" style="flex: 1; font-weight: 700;">Tìm kiếm</button>
+                    <a href="{{ url_for('public.index') }}" class="btn btn-secondary">Đặt lại</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h2 style="font-size: 1.4rem; font-weight: 700; color: #0f172a;">
+        Bất Động Sản Đang Mở Bán ({{ properties|length }})
+    </h2>
+    <span style="font-size: 0.85rem; color: #64748b;">Chỉ hiển thị các sản phẩm đã được Ban Quản Lý phê duyệt</span>
+</div>
+
+{% if properties %}
+    <div class="property-grid">
+        {% for prop in properties %}
+            <div class="property-card">
+                <div class="property-card-img-wrapper">
+                    {% if prop.image_url %}
+                        <img src="{{ prop.image_url }}" alt="{{ prop.title }}" class="property-card-img">
+                    {% else %}
+                        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #334155, #1e293b); color: #cbd5e1; font-size: 2.5rem;">
+                            🏡
+                        </div>
+                    {% endif %}
+                    
+                    <div class="property-card-badges">
+                        <span class="badge badge-success">{{ prop.transaction_type|upper }}</span>
+                        <span class="badge badge-primary">{{ prop.category|clean_title }}</span>
+                    </div>
+
+                    <div class="property-card-price-tag">
+                        {{ prop.price }} {{ prop.unit|clean_title }}
+                    </div>
+                </div>
+
+                <div class="property-card-body">
+                    <h3 class="property-card-title">
+                        <a href="{{ url_for('public.property_detail', property_id=prop.id) }}" style="text-decoration: none; color: inherit;">
+                            {{ prop.title }}
+                        </a>
+                    </h3>
+
+                    <div class="property-card-meta">
+                        <span>📐 {{ prop.area }} m²</span>
+                        <span>📍 {{ prop.ward|clean_title }}</span>
+                        {% if prop.structure %}
+                            <span>🏢 {{ prop.structure }} tầng</span>
+                        {% endif %}
+                    </div>
+
+                    <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        {{ prop.description or 'Thông tin chi tiết liên hệ chuyên viên phụ trách bên dưới.' }}
+                    </p>
+
+                    <!-- KHỐI CÁ NHÂN HÓA KINH DOANH (LEAD PROTECTION) -->
+                    <div class="lead-protection-banner">
+                        <div class="lead-author-info">
+                            <img src="{{ prop.author_logo }}" alt="{{ prop.author_name }}" class="lead-author-logo">
+                            <div class="lead-author-text">
+                                <div class="lead-author-name">Môi giới: {{ prop.author_name }}</div>
+                                <div class="lead-author-phone">📞 {{ prop.author_phone or 'Liên hệ hotline' }}</div>
+                            </div>
+                        </div>
+
+                        {% if prop.author_phone %}
+                            <a href="tel:{{ prop.author_phone }}" class="lead-call-btn">
+                                Gọi ngay
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="panel" style="text-align: center; padding: 4rem 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+        <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">Không tìm thấy bất động sản phù hợp</h3>
+        <p style="color: #64748b; margin-bottom: 1.5rem;">Hãy thử xóa bộ lọc tìm kiếm hoặc quay lại sau khi Ban Quản Lý phê duyệt thêm sản phẩm mới.</p>
+        <a href="{{ url_for('public.index') }}" class="btn btn-primary">Xem tất cả bài đăng</a>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng Ký Nhân Sự Mới | Quản Lý Bất Động Sản{% endblock %}
+
+{% block content %}
+<div style="max-width: 520px; margin: 2rem auto;">
+    <div class="panel" style="padding: 2rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.6rem; font-weight: 800; color: #0f172a;">Đăng Ký Nhân Sự Mới</h2>
+            <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.4rem;">Gia nhập đội ngũ khai thác bất động sản</p>
+        </div>
+
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 0.5rem; padding: 0.85rem; font-size: 0.85rem; color: #92400e; margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: flex-start;">
+            <span style="font-size: 1.2rem;">ℹ️</span>
+            <div>
+                <strong>Lưu ý quy trình nội bộ:</strong> Sau khi gửi form, tài khoản sẽ ở trạng thái <code>Chờ kích hoạt (is_active = False)</code>. Admin sẽ rà soát và kích hoạt trước khi bạn có thể đăng nhập.
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.register') }}">
+            <div class="form-group" style="margin-bottom: 1.1rem;">
+                <label class="form-label" for="username">Tên đăng nhập *</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Ví dụ: nguyen_van_a" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.1rem;">
+                <label class="form-label" for="password">Mật khẩu *</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Tối thiểu 6 ký tự" required minlength="6">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.1rem;">
+                <label class="form-label" for="phone_number">Số điện thoại liên hệ *</label>
+                <input type="tel" id="phone_number" name="phone_number" class="form-control" placeholder="Ví dụ: 0912345678" required>
+                <small style="color: #64748b; font-size: 0.75rem;">Số điện thoại này sẽ tự động hiển thị trên bài viết của bạn để bảo vệ quyền lợi nhận khách.</small>
+            </div>
+
+            <div class="form-grid" style="margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label class="form-label" for="role">Vai trò đăng ký</label>
+                    <select id="role" name="role" class="form-control">
+                        <option value="member">Nhân viên chính thức (Member)</option>
+                        <option value="probation">Nhân viên thử việc (Probation)</option>
+                        <option value="manager">Trưởng nhóm (Manager)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="group_id">Mã nhóm / Phòng ban</label>
+                    <input type="text" id="group_id" name="group_id" class="form-control" placeholder="Ví dụ: GROUP_A, TEAM_DALAT" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1rem;">
+                Gửi Yêu Cầu Đăng Ký
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #64748b;">
+            Đã có tài khoản? <a href="{{ url_for('auth.login') }}" style="color: var(--primary); font-weight: 600; text-decoration: none;">Đăng nhập ngay</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

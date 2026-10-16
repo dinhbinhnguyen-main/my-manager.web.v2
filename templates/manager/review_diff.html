@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}So Sánh Cập Nhật | Ban Quản Lý{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('manager.approval_list') }}" class="btn btn-sm btn-outline">&larr; Quay lại danh sách chờ duyệt</a>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Đối Chiếu Dữ Liệu Chỉnh Sửa</h2>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem;">
+                Người đề xuất: <strong>{{ author.username if author else 'N/A' }}</strong> (Nhóm: {{ author.group_id if author else '' }}) | SĐT: <strong>{{ author.phone_number if author else '' }}</strong>
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+            <form method="POST" action="{{ url_for('manager.approve', pending_id=pending.id) }}" style="display: inline;" onsubmit="return confirm('Duyệt và áp dụng thay đổi này vào bản ghi đang bán?');">
+                <button type="submit" class="btn btn-success">✓ Phê Duyệt Cập Nhật</button>
+            </form>
+
+            <button type="button" class="btn btn-danger" onclick="openRejectModal('{{ pending.id }}', '{{ pending.title }}')">✕ Từ Chối</button>
+        </div>
+    </div>
+
+    <div class="diff-container">
+        <!-- CỘT 1: DỮ LIỆU HIỆN TẠI ĐANG BÁN TRÊN SÀN -->
+        <div class="diff-col current">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #475569;">Bản Hiện Tại Đang Bán (Gốc)</h3>
+                <span class="badge badge-success">Approved</span>
+            </div>
+
+            {% if original %}
+                <div class="diff-row">
+                    <span class="diff-label">Tiêu đề:</span>
+                    <span style="font-weight: 600;">{{ original.title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Mức giá:</span>
+                    <span style="font-weight: 700; color: #d97706;">{{ original.price }} {{ original.unit.value|clean_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Diện tích:</span>
+                    <span>{{ original.area }} m²</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Loại hình:</span>
+                    <span>{{ original.category.value|clean_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Loại giao dịch:</span>
+                    <span>{{ original.transaction_type.value|upper }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Khu vực:</span>
+                    <span>{{ original.ward.value|clean_title }}, Đà Lạt</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Tên đường:</span>
+                    <span>{{ original.street or 'Chưa nhập' }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Pháp lý:</span>
+                    <span>{{ original.legal.value|clean_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Đường tiếp cận:</span>
+                    <span>{{ original.building_line.value|clean_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Nội thất:</span>
+                    <span>{{ original.furniture.value|clean_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Kết cấu:</span>
+                    <span>{{ original.structure }} tầng</span>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <div class="diff-label" style="margin-bottom: 0.35rem;">Mô tả hiện tại:</div>
+                    <div style="font-size: 0.85rem; color: #475569; background: #f8fafc; padding: 0.75rem; border-radius: 0.375rem; max-height: 150px; overflow-y: auto;">
+                        {{ original.description or 'Chưa có mô tả' }}
+                    </div>
+                </div>
+            {% else %}
+                <p style="color: #64748b; font-size: 0.9rem;">Không tìm thấy bản ghi gốc đã duyệt (Có thể là bài đăng tạo mới).</p>
+            {% endif %}
+        </div>
+
+        <!-- CỘT 2: BẢN NHÁP ĐỀ XUẤT THAY ĐỔI -->
+        <div class="diff-col proposed">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #0284c7;">Bản Nháp Mới Đề Xuất</h3>
+                <span class="badge badge-info">Pending Update</span>
+            </div>
+
+            <div class="diff-row">
+                <span class="diff-label">Tiêu đề:</span>
+                <span style="font-weight: 600; color: #0284c7;">{{ pending.title }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Mức giá:</span>
+                <span style="font-weight: 700; color: #d97706;">{{ pending.price }} {{ pending.unit.value|clean_title }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Diện tích:</span>
+                <span>{{ pending.area }} m²</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Loại hình:</span>
+                <span>{{ pending.category.value|clean_title }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Loại giao dịch:</span>
+                <span>{{ pending.transaction_type.value|upper }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Khu vực:</span>
+                <span>{{ pending.ward.value|clean_title }}, Đà Lạt</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Tên đường:</span>
+                <span>{{ pending.street or 'Chưa nhập' }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Pháp lý:</span>
+                <span>{{ pending.legal.value|clean_title }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Đường tiếp cận:</span>
+                <span>{{ pending.building_line.value|clean_title }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Nội thất:</span>
+                <span>{{ pending.furniture.value|clean_title }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Kết cấu:</span>
+                <span>{{ pending.structure }} tầng</span>
+            </div>
+            <div style="margin-top: 1rem;">
+                <div class="diff-label" style="margin-bottom: 0.35rem;">Mô tả mới đề xuất:</div>
+                <div style="font-size: 0.85rem; color: #0369a1; background: #e0f2fe; padding: 0.75rem; border-radius: 0.375rem; max-height: 150px; overflow-y: auto;">
+                    {{ pending.description or 'Chưa có mô tả' }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL TỪ CHỐI -->
+<div id="rejectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; width: 90%; max-width: 480px; border-radius: 0.75rem; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: #991b1b; margin-bottom: 0.5rem;">Từ Chối Cập Nhật</h3>
+        <form id="rejectForm" method="POST" action="{{ url_for('manager.reject', pending_id=pending.id) }}">
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label class="form-label" for="reject_reason">Lý do từ chối bản chỉnh sửa này *</label>
+                <textarea id="reject_reason" name="reject_reason" class="form-control" rows="4" placeholder="Nhập lý do để nhân viên điều chỉnh lại..." required></textarea>
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">Hủy</button>
+                <button type="submit" class="btn btn-danger">Xác Nhận Từ Chối</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openRejectModal(pendingId, title) {
+        document.getElementById('rejectModal').style.display = 'flex';
+    }
+    function closeRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

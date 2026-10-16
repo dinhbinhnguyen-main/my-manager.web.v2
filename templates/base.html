@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hệ thống Quản lý Bất động sản Nội bộ{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="{{ url_for('public.index') }}" class="brand">
+                <span>🏡 RealEstate Dalat</span>
+                <span class="brand-badge">Internal System</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="{{ url_for('public.index') }}">Trang chủ BĐS</a></li>
+                
+                {% if current_user %}
+                    <li><a href="{{ url_for('member.my_properties') }}">BĐS của tôi</a></li>
+                    
+                    {% if current_user.role.value in ['manager', 'admin'] %}
+                        <li>
+                            <a href="{{ url_for('manager.approval_list') }}">
+                                Duyệt bài 
+                                {% if current_user.role.value == 'manager' %}
+                                    <span style="font-size:0.75rem; opacity:0.8;">({{ current_user.group_id }})</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% if current_user.role.value == 'admin' %}
+                        <li><a href="{{ url_for('admin.user_management') }}">Quản lý nhân sự</a></li>
+                    {% endif %}
+
+                    <li class="nav-user">
+                        <a href="{{ url_for('auth.profile') }}" style="display:flex; align-items:center; gap:0.5rem; padding:0;">
+                            {% if current_user.logo_url %}
+                                <img src="{{ current_user.logo_url }}" alt="Logo" class="user-avatar">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/default_logo.png') }}" alt="Logo" class="user-avatar">
+                            {% endif %}
+                            <div style="line-height:1.2;">
+                                <div style="font-weight:700; font-size:0.85rem; color:#fff;">{{ current_user.username }}</div>
+                                <div style="font-size:0.7rem; color:#fbbf24;">{{ current_user.role.value|upper }}</div>
+                            </div>
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.4); margin-left:0.5rem;">
+                            Đăng xuất
+                        </a>
+                    </li>
+                {% else %}
+                    <li><a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline" style="color:#fff;">Đăng nhập</a></li>
+                    <li><a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-primary">Đăng ký nhân sự</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button onclick="this.parentElement.remove()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:inherit;">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Hệ thống Quản lý Bất động sản Nội bộ. Phân quyền và Bảo vệ Quyền lợi Kinh doanh.</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

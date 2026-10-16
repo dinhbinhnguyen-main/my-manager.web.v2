@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if property %}Chỉnh Sửa Sản Phẩm{% else %}Đăng Sản Phẩm BĐS Mới{% endif %} | Quản Lý BĐS
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 1.5rem auto;">
+    <div style="margin-bottom: 1.25rem;">
+        <a href="{{ url_for('member.my_properties') }}" class="btn btn-sm btn-outline">&larr; Quay lại danh sách của tôi</a>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">
+                    {% if property %}Chỉnh Sửa Bài Đăng: {{ property.title }}{% else %}Tạo Bài Đăng Bất Động Sản Mới{% endif %}
+                </h2>
+                <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.2rem;">
+                    {% if user.role.value == 'admin' %}
+                        <span class="badge badge-success">Admin</span> Bài đăng sẽ được phê duyệt và hiển thị ngay lập tức.
+                    {% else %}
+                        <span class="badge badge-warning">Chờ Duyệt</span> Bài đăng sẽ chuyển thành bản nháp gửi Ban Quản Lý phê duyệt trước khi lên sàn.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <!-- PHẦN 1: THÔNG TIN CƠ BẢN -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
+                    1. Thông Tin Cơ Bản
+                </h3>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label class="form-label" for="title">Tiêu đề bài đăng *</label>
+                    <input type="text" id="title" name="title" class="form-control" value="{{ property.title if property else '' }}" placeholder="Ví dụ: Bán biệt thự nghỉ dưỡng view thung lũng Khe Sanh, Phường 10" required>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="category">Loại hình bất động sản *</label>
+                        <select id="category" name="category" class="form-control" required>
+                            {% for c in categories %}
+                                <option value="{{ c.value }}" {% if property and property.category.value == c.value %}selected{% endif %}>
+                                    {{ c.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="transaction_type">Loại giao dịch *</label>
+                        <select id="transaction_type" name="transaction_type" class="form-control" required>
+                            {% for t in transaction_types %}
+                                <option value="{{ t.value }}" {% if property and property.transaction_type.value == t.value %}selected{% endif %}>
+                                    {{ t.value|upper }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="image_file">Hình ảnh sản phẩm (Tải file)</label>
+                        <input type="file" id="image_file" name="image_file" class="form-control" accept="image/png, image/jpeg, image/webp">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="image_url">Hoặc URL hình ảnh trực tuyến</label>
+                        <input type="url" id="image_url" name="image_url" class="form-control" value="{{ property.image_url if property else '' }}" placeholder="https://example.com/photo.jpg">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHẦN 2: ĐỊA CHỈ & VỊ TRÍ -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
+                    2. Địa Chỉ & Vị Trí
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="province">Tỉnh / Thành</label>
+                        <select id="province" name="province" class="form-control">
+                            {% for p in provinces %}
+                                <option value="{{ p.value }}" {% if property and property.province.value == p.value %}selected{% endif %}>
+                                    {{ p.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="district">Quận / Huyện / TP</label>
+                        <select id="district" name="district" class="form-control">
+                            {% for d in districts %}
+                                <option value="{{ d.value }}" {% if property and property.district.value == d.value %}selected{% endif %}>
+                                    {{ d.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ward">Phường / Xã *</label>
+                        <select id="ward" name="ward" class="form-control" required>
+                            {% for w in wards %}
+                                <option value="{{ w.value }}" {% if property and property.ward.value == w.value %}selected{% endif %}>
+                                    {{ w.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="street">Tên đường / Khu quy hoạch</label>
+                        <input type="text" id="street" name="street" class="form-control" value="{{ property.street if property else '' }}" placeholder="Ví dụ: Đường Khe Sanh">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHẦN 3: GIÁ VÀ DIỆN TÍCH -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
+                    3. Giá Bán & Diện Tích
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="area">Diện tích (m²) *</label>
+                        <input type="number" step="0.1" id="area" name="area" class="form-control" value="{{ property.area if property else 0 }}" required min="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="price">Mức giá *</label>
+                        <input type="number" step="0.01" id="price" name="price" class="form-control" value="{{ property.price if property else 0 }}" required min="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="unit">Đơn vị tính giá *</label>
+                        <select id="unit" name="unit" class="form-control" required>
+                            {% for u in units %}
+                                <option value="{{ u.value }}" {% if property and property.unit.value == u.value %}selected{% endif %}>
+                                    {{ u.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHẦN 4: THÔNG SỐ KỸ THUẬT & PHÁP LÝ -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
+                    4. Pháp Lý & Đặc Điểm Kỹ Thuật
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="legal">Tình trạng pháp lý *</label>
+                        <select id="legal" name="legal" class="form-control" required>
+                            {% for l in legals %}
+                                <option value="{{ l.value }}" {% if property and property.legal.value == l.value %}selected{% endif %}>
+                                    {{ l.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="building_line">Lộ giới / Đường tiếp cận *</label>
+                        <select id="building_line" name="building_line" class="form-control" required>
+                            {% for b in building_lines %}
+                                <option value="{{ b.value }}" {% if property and property.building_line.value == b.value %}selected{% endif %}>
+                                    {{ b.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="structure">Kết cấu (Số tầng)</label>
+                        <input type="number" step="0.5" id="structure" name="structure" class="form-control" value="{{ property.structure if property else 0 }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="furniture">Hiện trạng nội thất</label>
+                        <select id="furniture" name="furniture" class="form-control">
+                            {% for f in furnitures %}
+                                <option value="{{ f.value }}" {% if property and property.furniture.value == f.value %}selected{% endif %}>
+                                    {{ f.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="function">Công năng phòng & Tiện ích</label>
+                        <input type="text" id="function" name="function" class="form-control" value="{{ property.function if property else '' }}" placeholder="Ví dụ: 4 phòng ngủ khép kín, 1 phòng khách lớn, gara ô tô, sân vườn">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="description">Mô tả chi tiết & Thế mạnh bất động sản</label>
+                        <textarea id="description" name="description" class="form-control" rows="5" placeholder="Ghi chú về view, đường sá, phong thủy, tiềm năng sinh lời...">{{ property.description if property else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                <a href="{{ url_for('member.my_properties') }}" class="btn btn-secondary">Hủy bỏ</a>
+                <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">
+                    {% if property %}Lưu & Gửi Duyệt Cập Nhật{% else %}Gửi Duyệt Sản Phẩm Mới{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

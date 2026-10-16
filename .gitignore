@@ -1,0 +1,62 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+*.egg-info/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+.env.local
+
+# SQLite Database Files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+repositories/database/*.db
+repositories/database/*.db-wal
+repositories/database/*.db-shm
+!repositories/database/.gitkeep
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# User Uploads (Lưu trữ ảnh tải lên động, ngoại trừ các tài nguyên mẫu có sẵn)
+static/uploads/*
+!static/uploads/.gitkeep
+!static/uploads/default_logo.png
+!static/uploads/villa_dalat.jpg
+!static/uploads/townhouse_dalat.jpg
+!static/uploads/land_tanung.jpg
+!static/uploads/agent_an.jpg
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
