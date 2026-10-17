@@ -11,15 +11,21 @@ from property_enums import (
     DistrictType,
     UserRole,
     ApprovalStatus,
-    PendingAction
+    PendingAction,
+    ProductStatus,
+    PriceUnit,
+    OwnershipForm,
+    LandUseType,
+    TransactionMethod,
+    VehicleType,
+    FurnishedLevel,
+    Orientation,
+    rentPaymentCycle,
+    rentPurpose,
+    ElectricityCostType,
+    WaterCostType,
 )
-from constants import (
-    RealEstateProduct__Unit,
-    RealEstateProduct__Legal,
-    RealEstateProduct__BuildingLine,
-    RealEstateProduct__Furniture,
-    UPLOAD_FOLDER
-)
+from constants import UPLOAD_FOLDER
 
 member_bp = Blueprint("member", __name__, url_prefix="/dashboard")
 property_service = PropertyService()
@@ -36,10 +42,18 @@ def _get_form_enums():
         "wards": list(WardType),
         "provinces": list(ProvinceType),
         "districts": list(DistrictType),
-        "units": list(RealEstateProduct__Unit),
-        "legals": list(RealEstateProduct__Legal),
-        "building_lines": list(RealEstateProduct__BuildingLine),
-        "furnitures": list(RealEstateProduct__Furniture),
+        "units": list(PriceUnit),
+        "ownerships": list(OwnershipForm),
+        "land_uses": list(LandUseType),
+        "transaction_methods": list(TransactionMethod),
+        "vehicle_accesses": list(VehicleType),
+        "furnished_levels": list(FurnishedLevel),
+        "orientations": list(Orientation),
+        "statuses": list(ProductStatus),
+        "rent_payment_cycles": list(rentPaymentCycle),
+        "rent_purposes": list(rentPurpose),
+        "electricity_costs": list(ElectricityCostType),
+        "water_costs": list(WaterCostType),
     }
 
 @member_bp.route("/properties")
@@ -59,19 +73,38 @@ def create_property():
     user = get_current_user()
 
     if request.method == "POST":
-        image_url = request.form.get("image_url", "").strip()
+        images = []
 
-        if "image_file" in request.files:
-            file = request.files["image_file"]
+        # Hỗ trợ upload nhiều file ảnh
+        uploaded_files = request.files.getlist("image_files")
+        if not uploaded_files or (len(uploaded_files) == 1 and not uploaded_files[0].filename):
+            if "image_file" in request.files:
+                uploaded_files = [request.files["image_file"]]
+
+        for file in uploaded_files:
             if file and file.filename and allowed_file(file.filename):
                 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
                 ext = file.filename.rsplit(".", 1)[1].lower()
                 filename = f"prop_{uuid.uuid4().hex[:10]}.{ext}"
                 file.save(os.path.join(UPLOAD_FOLDER, filename))
-                image_url = f"/static/uploads/{filename}"
+                images.append(f"/static/uploads/{filename}")
+
+        # Hỗ trợ nhập URL ảnh trực tuyến
+        custom_url = request.form.get("image_url", "").strip()
+        if custom_url and custom_url not in images:
+            images.insert(0, custom_url)
+
+        # Nếu không upload file mới, giữ images cũ từ form
+        if not images:
+            import json
+            raw = request.form.get("existing_images", "[]")
+            try:
+                images = json.loads(raw)
+            except Exception:
+                images = []
 
         form_data = dict(request.form)
-        success, msg, prop_id = property_service.create_property(user, form_data, image_url=image_url)
+        success, msg, prop_id = property_service.create_property(user, form_data, images=images)
 
         if success:
             flash(msg, "success")
@@ -97,18 +130,39 @@ def edit_property(prop_id: str):
         return redirect(url_for("member.my_properties"))
 
     if request.method == "POST":
-        image_url = None
-        if "image_file" in request.files:
-            file = request.files["image_file"]
+        new_images = []
+
+        uploaded_files = request.files.getlist("image_files")
+        if not uploaded_files or (len(uploaded_files) == 1 and not uploaded_files[0].filename):
+            if "image_file" in request.files:
+                uploaded_files = [request.files["image_file"]]
+
+        for file in uploaded_files:
             if file and file.filename and allowed_file(file.filename):
                 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
                 ext = file.filename.rsplit(".", 1)[1].lower()
                 filename = f"prop_{uuid.uuid4().hex[:10]}.{ext}"
                 file.save(os.path.join(UPLOAD_FOLDER, filename))
-                image_url = f"/static/uploads/{filename}"
+                new_images.append(f"/static/uploads/{filename}")
+
+        custom_url = request.form.get("image_url", "").strip()
+        if custom_url and custom_url not in new_images:
+            new_images.insert(0, custom_url)
+
+        if new_images:
+            images = new_images
+        else:
+            images = None  # Giữ nguyên images cũ
+            import json
+            raw = request.form.get("existing_images", "")
+            if raw:
+                try:
+                    images = json.loads(raw)
+                except Exception:
+                    images = None
 
         form_data = dict(request.form)
-        success, msg = property_service.update_property(user, prop_id, form_data, image_url=image_url)
+        success, msg = property_service.update_property(user, prop_id, form_data, images=images)
 
         if success:
             flash(msg, "success")

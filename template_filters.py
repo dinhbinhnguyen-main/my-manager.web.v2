@@ -1,4 +1,5 @@
 from property_enums import UserRole, ApprovalStatus, PendingAction, ProductStatus
+from utils.i18n import tr_enum
 
 ROLE_LABELS = {
     "admin": "Quản Trị Viên",
@@ -32,10 +33,14 @@ PRODUCT_STATUS_LABELS = {
 }
 
 def register_filters(app):
+    @app.template_filter("tr_enum")
+    def filter_tr_enum(val, lang="vi"):
+        return tr_enum(val, lang=lang)
+
     @app.template_filter("role_label")
     def role_label(role):
         val = role.value if hasattr(role, "value") else str(role).lower()
-        return ROLE_LABELS.get(val, val)
+        return ROLE_LABELS.get(val, tr_enum(val))
 
     @app.template_filter("approval_badge")
     def approval_badge(status):
@@ -57,6 +62,13 @@ def register_filters(app):
         label, css_class = PRODUCT_STATUS_LABELS.get(val, (val, "secondary"))
         return f'<span class="badge badge-{css_class}">{label}</span>'
 
+    @app.template_filter("orientation_label")
+    def orientation_label(ori):
+        return tr_enum(ori)
+
     @app.template_filter("clean_title")
     def clean_title(title):
-        return title.replace("_", " ").title() if title else ""
+        if not title:
+            return ""
+        val = title.value if hasattr(title, "value") else str(title)
+        return tr_enum(val)

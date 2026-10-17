@@ -1,15 +1,17 @@
 import os
 import unittest
 from base_entities import UserEntity, PropertyEntity
-from property_enums import UserRole, ApprovalStatus, PendingAction, ProductStatus
+from property_enums import UserRole, ApprovalStatus, PendingAction, ProductStatus, Orientation
 from services.auth_service import AuthService
 from services.user_service import UserService
 from services.property_service import PropertyService
 from repositories.database import init_db
+from seed_data import seed
 
 class TestRealEstateWorkflow(unittest.TestCase):
     def setUp(self):
         init_db()
+        seed()
         self.auth_svc = AuthService()
         self.user_svc = UserService()
         self.prop_svc = PropertyService()
@@ -76,20 +78,21 @@ class TestRealEstateWorkflow(unittest.TestCase):
 
         # Member tạo bài mới
         form_data = {
-            "title": "Nhà vườn đèo Prenn view rừng thông",
+            "orientation": "southeast",
             "category": "townhouse",
             "transaction_type": "sale",
             "ward": "phuong_3_xuan_huong",
             "area": "150.0",
             "price": "6.5",
             "unit": "billion",
-            "legal": "private_construction_deed"
+            "ownership": "private"
         }
         ok, msg, prop_id = self.prop_svc.create_property(member, form_data)
         self.assertTrue(ok)
         created_prop = self.prop_svc.property_repo.get_by_id(prop_id)
         self.assertEqual(created_prop.approval_status, ApprovalStatus.PENDING)
         self.assertEqual(created_prop.pending_action, PendingAction.CREATE)
+        self.assertEqual(created_prop.orientation, Orientation.SOUTHEAST)
 
         # Admin tạo bài mới
         admin_ok, admin_msg, admin_prop_id = self.prop_svc.create_property(admin, form_data)
@@ -97,6 +100,7 @@ class TestRealEstateWorkflow(unittest.TestCase):
         admin_prop = self.prop_svc.property_repo.get_by_id(admin_prop_id)
         self.assertEqual(admin_prop.approval_status, ApprovalStatus.APPROVED)
         self.assertEqual(admin_prop.pending_action, PendingAction.NONE)
+        self.assertEqual(admin_prop.orientation, Orientation.SOUTHEAST)
         print("✓ Test 03: Đề xuất Tạo mới (Member chờ duyệt, Admin duyệt ngay) PASSED")
 
     def test_04_update_clone_and_approval_workflow(self):
@@ -114,16 +118,16 @@ class TestRealEstateWorkflow(unittest.TestCase):
         original = props[0]
         original_price = original.price
 
-        # Member gửi yêu cầu chỉnh sửa giá và tiêu đề
+        # Member gửi yêu cầu chỉnh sửa giá và hướng
         update_data = {
-            "title": original.title + " [GIẢM GIÁ ĐẶC BIỆT]",
+            "orientation": "south",
             "price": original_price - 1.0,
             "area": original.area,
             "category": original.category.value,
             "transaction_type": original.transaction_type.value,
             "ward": original.ward.value,
             "unit": original.unit.value,
-            "legal": original.legal.value
+            "ownership": original.ownership.value
         }
         update_ok, update_msg = self.prop_svc.update_property(member, original.id, update_data)
         self.assertTrue(update_ok)
@@ -139,15 +143,16 @@ class TestRealEstateWorkflow(unittest.TestCase):
         self.assertEqual(draft.approval_status, ApprovalStatus.PENDING)
         self.assertEqual(draft.pending_action, PendingAction.UPDATE)
         self.assertEqual(draft.price, original_price - 1.0)
+        self.assertEqual(draft.orientation, Orientation.SOUTH)
 
         # Manager duyệt yêu cầu
         approve_ok, approve_msg = self.prop_svc.approve(manager, draft.id)
         self.assertTrue(approve_ok)
 
-        # Sau khi duyệt: Bản ghi gốc đã được cập nhật giá mới, bản nháp bị xóa
+        # Sau khi duyệt: Bản ghi gốc đã được cập nhật giá mới và hướng mới, bản nháp bị xóa
         updated_original = self.prop_svc.property_repo.get_by_id(original.id)
         self.assertEqual(updated_original.price, original_price - 1.0)
-        self.assertIn("[GIẢM GIÁ ĐẶC BIỆT]", updated_original.title)
+        self.assertEqual(updated_original.orientation, Orientation.SOUTH)
         self.assertIsNone(self.prop_svc.property_repo.get_by_id(draft.id))
         print("✓ Test 04: Luồng Sửa đổi (Tạo bản nháp giữ nguyên bài gốc -> Manager duyệt) PASSED")
 
@@ -159,7 +164,7 @@ class TestRealEstateWorkflow(unittest.TestCase):
         
         # Tạo thử 1 bài cho probation
         form_data = {
-            "title": "Nhà cấp 4 Phường 7",
+            "orientation": "east",
             "category": "townhouse",
             "price": "3.5",
             "area": "80"

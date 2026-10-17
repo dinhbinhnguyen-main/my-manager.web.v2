@@ -1,7 +1,8 @@
 import uuid
+import json
 import datetime
 from dataclasses import dataclass, asdict, field
-from typing import Any, Dict, Type, TypeVar, Optional
+from typing import Any, Dict, List, Type, TypeVar, Optional
 from enum import Enum
 
 from property_enums import (
@@ -14,12 +15,17 @@ from property_enums import (
     DistrictType,
     WardType,
     PropertyType,
-)
-from constants import (
-    RealEstateProduct__Unit,
-    RealEstateProduct__Legal,
-    RealEstateProduct__BuildingLine,
-    RealEstateProduct__Furniture,
+    Orientation,
+    PriceUnit,
+    OwnershipForm,
+    LandUseType,
+    TransactionMethod,
+    VehicleType,
+    FurnishedLevel,
+    rentPaymentCycle,
+    rentPurpose,
+    ElectricityCostType,
+    WaterCostType,
 )
 
 T = TypeVar("T", bound="BaseEntity")
@@ -59,11 +65,14 @@ class BaseEntity:
     def to_dict(self) -> Dict[str, Any]:
         """
         Converts the dataclass instance into a dictionary, ensuring Enum members are converted to values.
+        List fields are serialized to JSON strings for SQLite storage.
         """
         data = asdict(self)
         for key, value in data.items():
             if isinstance(value, Enum):
                 data[key] = value.value
+            elif isinstance(value, list):
+                data[key] = json.dumps(value, ensure_ascii=False)
         return data
 
     @classmethod
@@ -120,8 +129,7 @@ class PropertyEntity(BaseEntity):
     reject_reason: str = ""
 
     # --- Thông tin sản phẩm ---
-    title: str = ""
-    image_url: str = ""
+    images: List[str] = field(default_factory=list)  # Danh sách URL ảnh (JSON array trong DB)
     status: ProductStatus = ProductStatus.HIDDEN
     transaction_type: TransactionType = TransactionType.SALE
     province: ProvinceType = ProvinceType.LAM_DONG
@@ -131,19 +139,47 @@ class PropertyEntity(BaseEntity):
     category: PropertyType = PropertyType.TOWNHOUSE
     area: float = 0.0
     price: float = 0.0
-    unit: RealEstateProduct__Unit = RealEstateProduct__Unit.BILLION
-    legal: RealEstateProduct__Legal = RealEstateProduct__Legal.PRIVATE_CONSTRUCTION_DEED
+    unit: PriceUnit = PriceUnit.BILLION
+
+    # --- Thông tin chủ nhà ---
+    owner_name: str = ""
+    owner_phone: str = ""
+    map_url: str = ""  # URL Google Maps vị trí bất động sản
+
+    # --- Pháp lý ---
+    ownership: OwnershipForm = OwnershipForm.PRIVATE
+    land_use: LandUseType = LandUseType.RESIDENTIAL_LAND
+    transaction_method: TransactionMethod = TransactionMethod.NOTARIZED_CONTRACT
+
+    # --- Đặc điểm kỹ thuật ---
+    orientation: Orientation = Orientation.UNKNOWN
     structure: float = 0.0
     function: str = ""
-    building_line: RealEstateProduct__BuildingLine = (
-        RealEstateProduct__BuildingLine.MOTORBIKE_ACCESS_ROAD
-    )
-    furniture: RealEstateProduct__Furniture = RealEstateProduct__Furniture.NO_FURNITURE
+    vehicle_access: VehicleType = VehicleType.MOTORBIKE
+    furnished_level: FurnishedLevel = FurnishedLevel.NONE
     description: str = ""
+
+    # --- Đặc thù Cho thuê (Rent Specifics) ---
+    deposit: float = 0.0  # Tiền cọc (hoặc số tháng cọc)
+    payment_cycle: rentPaymentCycle = rentPaymentCycle.MONTHLY
+    rent_purpose: rentPurpose = rentPurpose.RESIDENTIAL
+    lease_term: int = 12  # Thời hạn thuê tối thiểu (tháng)
+    electricity_cost: ElectricityCostType = ElectricityCostType.STATE_RATE
+    water_cost: WaterCostType = WaterCostType.STATE_RATE
 
     def __post_init__(self):
         if not self.pid and self.id:
             self.pid = self.id
+
+        # Parse images: chuỗi JSON từ DB → Python list
+        if isinstance(self.images, str):
+            try:
+                parsed = json.loads(self.images)
+                self.images = parsed if isinstance(parsed, list) else ([parsed] if parsed else [])
+            except (json.JSONDecodeError, ValueError):
+                self.images = [self.images] if self.images else []
+        elif not isinstance(self.images, list):
+            self.images = []
 
         try:
             self.area = float(self.area) if self.area else 0.0
@@ -159,6 +195,16 @@ class PropertyEntity(BaseEntity):
             self.structure = float(self.structure) if self.structure else 0.0
         except (ValueError, TypeError):
             self.structure = 0.0
+
+        try:
+            self.deposit = float(self.deposit) if self.deposit else 0.0
+        except (ValueError, TypeError):
+            self.deposit = 0.0
+
+        try:
+            self.lease_term = int(self.lease_term) if self.lease_term else 12
+        except (ValueError, TypeError):
+            self.lease_term = 12
 
         def parse_enum(value, enum_cls, default):
             if isinstance(value, str):
@@ -185,21 +231,42 @@ class PropertyEntity(BaseEntity):
         self.district = parse_enum(self.district, DistrictType, DistrictType.DA_LAT)
         self.ward = parse_enum(self.ward, WardType, WardType.PHUONG_1)
         self.category = parse_enum(self.category, PropertyType, PropertyType.TOWNHOUSE)
-        self.unit = parse_enum(
-            self.unit, RealEstateProduct__Unit, RealEstateProduct__Unit.BILLION
+        self.unit = parse_enum(self.unit, PriceUnit, PriceUnit.BILLION)
+
+        # Parse Pháp lý
+        self.ownership = parse_enum(self.ownership, OwnershipForm, OwnershipForm.PRIVATE)
+        if self.land_use in ("residential", "residential_land"):
+            self.land_use = LandUseType.RESIDENTIAL_LAND
+        else:
+            self.land_use = parse_enum(self.land_use, LandUseType, LandUseType.RESIDENTIAL_LAND)
+        self.transaction_method = parse_enum(
+            self.transaction_method, TransactionMethod, TransactionMethod.NOTARIZED_CONTRACT
         )
-        self.legal = parse_enum(
-            self.legal,
-            RealEstateProduct__Legal,
-            RealEstateProduct__Legal.PRIVATE_CONSTRUCTION_DEED,
-        )
-        self.building_line = parse_enum(
-            self.building_line,
-            RealEstateProduct__BuildingLine,
-            RealEstateProduct__BuildingLine.MOTORBIKE_ACCESS_ROAD,
-        )
-        self.furniture = parse_enum(
-            self.furniture,
-            RealEstateProduct__Furniture,
-            RealEstateProduct__Furniture.NO_FURNITURE,
-        )
+
+        # Parse Đặc điểm kỹ thuật
+        self.orientation = parse_enum(self.orientation, Orientation, Orientation.UNKNOWN)
+        self.vehicle_access = parse_enum(self.vehicle_access, VehicleType, VehicleType.MOTORBIKE)
+        self.furnished_level = parse_enum(self.furnished_level, FurnishedLevel, FurnishedLevel.NONE)
+
+        # Parse Đặc thù Cho thuê
+        self.payment_cycle = parse_enum(self.payment_cycle, rentPaymentCycle, rentPaymentCycle.MONTHLY)
+        self.rent_purpose = parse_enum(self.rent_purpose, rentPurpose, rentPurpose.RESIDENTIAL)
+        self.electricity_cost = parse_enum(self.electricity_cost, ElectricityCostType, ElectricityCostType.STATE_RATE)
+        self.water_cost = parse_enum(self.water_cost, WaterCostType, WaterCostType.STATE_RATE)
+
+    @property
+    def display_title(self) -> str:
+        from utils.i18n import tr_enum
+        cat_name = tr_enum(self.category)
+        loc = self.street or tr_enum(self.ward)
+        return f"{cat_name} - {loc}" if loc else cat_name
+
+    @property
+    def title(self) -> str:
+        return self.display_title
+
+    @property
+    def image_url(self) -> str:
+        if self.images and len(self.images) > 0:
+            return self.images[0]
+        return ""

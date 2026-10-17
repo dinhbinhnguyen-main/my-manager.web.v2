@@ -35,8 +35,12 @@
 
             {% if original %}
                 <div class="diff-row">
-                    <span class="diff-label">Tiêu đề:</span>
-                    <span style="font-weight: 600;">{{ original.title }}</span>
+                    <span class="diff-label">Sản phẩm:</span>
+                    <span style="font-weight: 600;">{{ original.display_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Hướng:</span>
+                    <span style="font-weight: 600;">{{ original.orientation|orientation_label }}</span>
                 </div>
                 <div class="diff-row">
                     <span class="diff-label">Mức giá:</span>
@@ -63,21 +67,43 @@
                     <span>{{ original.street or 'Chưa nhập' }}</span>
                 </div>
                 <div class="diff-row">
-                    <span class="diff-label">Pháp lý:</span>
-                    <span>{{ original.legal.value|clean_title }}</span>
+                    <span class="diff-label">Sở hữu:</span>
+                    <span>{{ (original.ownership.value if original.ownership else '')|clean_title }}</span>
                 </div>
                 <div class="diff-row">
                     <span class="diff-label">Đường tiếp cận:</span>
-                    <span>{{ original.building_line.value|clean_title }}</span>
+                    <span>{{ (original.vehicle_access.value if original.vehicle_access else '')|clean_title }}</span>
                 </div>
                 <div class="diff-row">
                     <span class="diff-label">Nội thất:</span>
-                    <span>{{ original.furniture.value|clean_title }}</span>
+                    <span>{{ (original.furnished_level.value if original.furnished_level else '')|clean_title }}</span>
                 </div>
                 <div class="diff-row">
                     <span class="diff-label">Kết cấu:</span>
                     <span>{{ original.structure }} tầng</span>
                 </div>
+                <div class="diff-row">
+                    <span class="diff-label">Chủ nhà:</span>
+                    <span>{{ original.owner_name or 'Chưa nhập' }} ({{ original.owner_phone or 'Chưa có SĐT' }})</span>
+                </div>
+                {% if original.transaction_type.value == 'rent' %}
+                    <div class="diff-row">
+                        <span class="diff-label">Tiền cọc:</span>
+                        <span>{{ original.deposit }} Triệu</span>
+                    </div>
+                    <div class="diff-row">
+                        <span class="diff-label">Kỳ thanh toán:</span>
+                        <span>{{ original.payment_cycle.value|clean_title }}</span>
+                    </div>
+                    <div class="diff-row">
+                        <span class="diff-label">Mục đích thuê:</span>
+                        <span>{{ original.rent_purpose.value|clean_title }}</span>
+                    </div>
+                    <div class="diff-row">
+                        <span class="diff-label">Hạn HĐ tối thiểu:</span>
+                        <span>{{ original.lease_term }} tháng</span>
+                    </div>
+                {% endif %}
                 <div style="margin-top: 1rem;">
                     <div class="diff-label" style="margin-bottom: 0.35rem;">Mô tả hiện tại:</div>
                     <div style="font-size: 0.85rem; color: #475569; background: #f8fafc; padding: 0.75rem; border-radius: 0.375rem; max-height: 150px; overflow-y: auto;">
@@ -97,8 +123,12 @@
             </div>
 
             <div class="diff-row">
-                <span class="diff-label">Tiêu đề:</span>
-                <span style="font-weight: 600; color: #0284c7;">{{ pending.title }}</span>
+                <span class="diff-label">Sản phẩm:</span>
+                <span style="font-weight: 600; color: #0284c7;">{{ pending.display_title }}</span>
+            </div>
+            <div class="diff-row">
+                <span class="diff-label">Hướng:</span>
+                <span style="font-weight: 600; color: #0284c7;">{{ pending.orientation|orientation_label }}</span>
             </div>
             <div class="diff-row">
                 <span class="diff-label">Mức giá:</span>
@@ -125,21 +155,43 @@
                 <span>{{ pending.street or 'Chưa nhập' }}</span>
             </div>
             <div class="diff-row">
-                <span class="diff-label">Pháp lý:</span>
-                <span>{{ pending.legal.value|clean_title }}</span>
+                <span class="diff-label">Sở hữu:</span>
+                <span>{{ (pending.ownership.value if pending.ownership else '')|clean_title }}</span>
             </div>
             <div class="diff-row">
                 <span class="diff-label">Đường tiếp cận:</span>
-                <span>{{ pending.building_line.value|clean_title }}</span>
+                <span>{{ (pending.vehicle_access.value if pending.vehicle_access else '')|clean_title }}</span>
             </div>
             <div class="diff-row">
                 <span class="diff-label">Nội thất:</span>
-                <span>{{ pending.furniture.value|clean_title }}</span>
+                <span>{{ (pending.furnished_level.value if pending.furnished_level else '')|clean_title }}</span>
             </div>
             <div class="diff-row">
                 <span class="diff-label">Kết cấu:</span>
                 <span>{{ pending.structure }} tầng</span>
             </div>
+            <div class="diff-row">
+                <span class="diff-label">Chủ nhà:</span>
+                <span style="color: #0284c7; font-weight: 600;">{{ pending.owner_name or 'Chưa nhập' }} ({{ pending.owner_phone or 'Chưa có SĐT' }})</span>
+            </div>
+            {% if pending.transaction_type.value == 'rent' %}
+                <div class="diff-row">
+                    <span class="diff-label">Tiền cọc:</span>
+                    <span style="color: #0284c7; font-weight: 600;">{{ pending.deposit }} Triệu</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Kỳ thanh toán:</span>
+                    <span style="color: #0284c7;">{{ pending.payment_cycle.value|clean_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Mục đích thuê:</span>
+                    <span style="color: #0284c7;">{{ pending.rent_purpose.value|clean_title }}</span>
+                </div>
+                <div class="diff-row">
+                    <span class="diff-label">Hạn HĐ tối thiểu:</span>
+                    <span style="color: #0284c7;">{{ pending.lease_term }} tháng</span>
+                </div>
+            {% endif %}
             <div style="margin-top: 1rem;">
                 <div class="diff-label" style="margin-bottom: 0.35rem;">Mô tả mới đề xuất:</div>
                 <div style="font-size: 0.85rem; color: #0369a1; background: #e0f2fe; padding: 0.75rem; border-radius: 0.375rem; max-height: 150px; overflow-y: auto;">

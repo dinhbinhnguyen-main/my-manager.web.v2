@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 900px; margin: 1.5rem auto;">
+<div style="max-width: 960px; margin: 1.5rem auto;">
     <div style="margin-bottom: 1.25rem;">
         <a href="{{ url_for('member.my_properties') }}" class="btn btn-sm btn-outline">&larr; Quay lại danh sách của tôi</a>
     </div>
@@ -14,7 +14,7 @@
         <div class="panel-header">
             <div>
                 <h2 class="panel-title">
-                    {% if property %}Chỉnh Sửa Bài Đăng: {{ property.title }}{% else %}Tạo Bài Đăng Bất Động Sản Mới{% endif %}
+                    {% if property %}Chỉnh Sửa Bài Đăng: {{ property.display_title }}{% else %}Tạo Bài Đăng Bất Động Sản Mới{% endif %}
                 </h2>
                 <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.2rem;">
                     {% if user.role.value == 'admin' %}
@@ -26,17 +26,12 @@
             </div>
         </div>
 
-        <form method="POST" enctype="multipart/form-data">
-            <!-- PHẦN 1: THÔNG TIN CƠ BẢN -->
+        <form method="POST" enctype="multipart/form-data" id="propertyForm">
+            <!-- 1. THÔNG TIN CƠ BẢN -->
             <div style="margin-bottom: 2rem;">
                 <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
-                    1. Thông Tin Cơ Bản
+                    1. Phân Loại & Hình Ảnh
                 </h3>
-
-                <div class="form-group" style="margin-bottom: 1.25rem;">
-                    <label class="form-label" for="title">Tiêu đề bài đăng *</label>
-                    <input type="text" id="title" name="title" class="form-control" value="{{ property.title if property else '' }}" placeholder="Ví dụ: Bán biệt thự nghỉ dưỡng view thung lũng Khe Sanh, Phường 10" required>
-                </div>
 
                 <div class="form-grid">
                     <div class="form-group">
@@ -52,31 +47,75 @@
 
                     <div class="form-group">
                         <label class="form-label" for="transaction_type">Loại giao dịch *</label>
-                        <select id="transaction_type" name="transaction_type" class="form-control" required>
+                        <select id="transaction_type" name="transaction_type" class="form-control" required onchange="handleTransactionTypeChange()">
                             {% for t in transaction_types %}
                                 <option value="{{ t.value }}" {% if property and property.transaction_type.value == t.value %}selected{% endif %}>
-                                    {{ t.value|upper }}
+                                    {{ t.value|upper }} - {% if t.value == 'sale' %}Mua Bán Chuyển Nhượng{% elif t.value == 'rent' %}Cho Thuê BĐS{% else %}Sang Nhượng{% endif %}
                                 </option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="image_file">Hình ảnh sản phẩm (Tải file)</label>
-                        <input type="file" id="image_file" name="image_file" class="form-control" accept="image/png, image/jpeg, image/webp">
+                        <label class="form-label" for="status">Trạng thái kinh doanh</label>
+                        <select id="status" name="status" class="form-control">
+                            {% for s in statuses %}
+                                <option value="{{ s.value }}" {% if property and property.status.value == s.value %}selected{% elif not property and s.value == 'selling' and user.role.value == 'admin' %}selected{% elif not property and s.value == 'hidden' and user.role.value != 'admin' %}selected{% endif %}>
+                                    {{ s.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="image_url">Hoặc URL hình ảnh trực tuyến</label>
-                        <input type="url" id="image_url" name="image_url" class="form-control" value="{{ property.image_url if property else '' }}" placeholder="https://example.com/photo.jpg">
+                        <label class="form-label" for="image_files">Tải lên hình ảnh (Chọn nhiều ảnh)</label>
+                        <input type="file" id="image_files" name="image_files" class="form-control" accept="image/png, image/jpeg, image/webp" multiple>
+                        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">Hỗ trợ chọn cùng lúc nhiều file ảnh (JPG, PNG, WebP)</span>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="image_url">Hoặc đường dẫn ảnh trực tuyến (Image URL)</label>
+                        <input type="url" id="image_url" name="image_url" class="form-control" value="{{ property.image_url if property else '' }}" placeholder="https://example.com/anh-biet-thu-dalat.jpg">
+                    </div>
+
+                    {% if property and property.images %}
+                        <div class="form-group full-width">
+                            <label class="form-label">Hình ảnh hiện tại ({{ property.images|length }} ảnh):</label>
+                            <input type="hidden" name="existing_images" value='{{ property.images|tojson }}'>
+                            <div style="display: flex; gap: 0.75rem; overflow-x: auto; padding: 0.5rem 0;">
+                                {% for img in property.images %}
+                                    <img src="{{ img }}" alt="Ảnh" style="width: 90px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 2. THÔNG TIN CHỦ NHÀ & NGUỒN HÀNG (QUẢN LÝ NỘI BỘ) -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
+                    2. Thông Tin Chủ Nhà / Nguồn Hàng (Bảo Mật Nội Bộ)
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="owner_name">Họ và tên chủ nhà / Đầu chủ</label>
+                        <input type="text" id="owner_name" name="owner_name" class="form-control" value="{{ property.owner_name if property else '' }}" placeholder="Ví dụ: Anh Nguyễn Văn A">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="owner_phone">Số điện thoại liên hệ chủ nhà</label>
+                        <input type="tel" id="owner_phone" name="owner_phone" class="form-control" value="{{ property.owner_phone if property else '' }}" placeholder="Ví dụ: 0912 345 678">
+                        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">Thông tin chỉ hiển thị cho nhân sự nội bộ và cấp quản lý.</span>
                     </div>
                 </div>
             </div>
 
-            <!-- PHẦN 2: ĐỊA CHỈ & VỊ TRÍ -->
+            <!-- 3. ĐỊA CHỈ & VỊ TRÍ -->
             <div style="margin-bottom: 2rem;">
                 <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
-                    2. Địa Chỉ & Vị Trí
+                    3. Địa Chỉ & Vị Trí
                 </h3>
 
                 <div class="form-grid">
@@ -115,30 +154,35 @@
 
                     <div class="form-group">
                         <label class="form-label" for="street">Tên đường / Khu quy hoạch</label>
-                        <input type="text" id="street" name="street" class="form-control" value="{{ property.street if property else '' }}" placeholder="Ví dụ: Đường Khe Sanh">
+                        <input type="text" id="street" name="street" class="form-control" value="{{ property.street if property else '' }}" placeholder="Ví dụ: Đường Khe Sanh, Phường 10">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="map_url">Google Maps URL vị trí</label>
+                        <input type="url" id="map_url" name="map_url" class="form-control" value="{{ property.map_url if property else '' }}" placeholder="https://maps.google.com/?q=...">
                     </div>
                 </div>
             </div>
 
-            <!-- PHẦN 3: GIÁ VÀ DIỆN TÍCH -->
+            <!-- 4. DIỆN TÍCH VÀ MỨC GIÁ -->
             <div style="margin-bottom: 2rem;">
                 <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
-                    3. Giá Bán & Diện Tích
+                    4. Diện Tích & Mức Giá
                 </h3>
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label" for="area">Diện tích (m²) *</label>
+                        <label class="form-label" for="area">Diện tích sàn (m²) *</label>
                         <input type="number" step="0.1" id="area" name="area" class="form-control" value="{{ property.area if property else 0 }}" required min="1">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="price">Mức giá *</label>
+                        <label class="form-label" for="price" id="lblPrice">Mức giá *</label>
                         <input type="number" step="0.01" id="price" name="price" class="form-control" value="{{ property.price if property else 0 }}" required min="0.01">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="unit">Đơn vị tính giá *</label>
+                        <label class="form-label" for="unit">Đơn vị tính *</label>
                         <select id="unit" name="unit" class="form-control" required>
                             {% for u in units %}
                                 <option value="{{ u.value }}" {% if property and property.unit.value == u.value %}selected{% endif %}>
@@ -150,30 +194,124 @@
                 </div>
             </div>
 
-            <!-- PHẦN 4: THÔNG SỐ KỸ THUẬT & PHÁP LÝ -->
-            <div style="margin-bottom: 2rem;">
-                <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
-                    4. Pháp Lý & Đặc Điểm Kỹ Thuật
+            <!-- 5A. KHỐI THÔNG TIN PHÁP LÝ (ÁP DỤNG CHO BÁN / SALE) -->
+            <div id="saleSection" style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #0284c7; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #bae6fd;">
+                    5. Pháp Lý Mua Bán & Quy Hoạch Đất
                 </h3>
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label" for="legal">Tình trạng pháp lý *</label>
-                        <select id="legal" name="legal" class="form-control" required>
-                            {% for l in legals %}
-                                <option value="{{ l.value }}" {% if property and property.legal.value == l.value %}selected{% endif %}>
-                                    {{ l.value|clean_title }}
+                        <label class="form-label" for="ownership">Hình thức sở hữu</label>
+                        <select id="ownership" name="ownership" class="form-control">
+                            {% for o in ownerships %}
+                                <option value="{{ o.value }}" {% if property and property.ownership.value == o.value %}selected{% endif %}>
+                                    {{ o.value|clean_title }}
                                 </option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="building_line">Lộ giới / Đường tiếp cận *</label>
-                        <select id="building_line" name="building_line" class="form-control" required>
-                            {% for b in building_lines %}
-                                <option value="{{ b.value }}" {% if property and property.building_line.value == b.value %}selected{% endif %}>
-                                    {{ b.value|clean_title }}
+                        <label class="form-label" for="land_use">Mục đích sử dụng đất</label>
+                        <select id="land_use" name="land_use" class="form-control">
+                            {% for lu in land_uses %}
+                                <option value="{{ lu.value }}" {% if property and property.land_use.value == lu.value %}selected{% endif %}>
+                                    {{ lu.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="transaction_method">Phương thức giao dịch</label>
+                        <select id="transaction_method" name="transaction_method" class="form-control">
+                            {% for tm in transaction_methods %}
+                                <option value="{{ tm.value }}" {% if property and property.transaction_method.value == tm.value %}selected{% endif %}>
+                                    {{ tm.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5B. KHỐI THÔNG TIN CHO THUÊ (ÁP DỤNG CHO THUÊ / RENT) -->
+            <div id="rentSection" style="margin-bottom: 2rem; display: none;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #059669; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #a7f3d0;">
+                    5. Điều Khoản Cho Thuê & Chi Phí Tiện Ích
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="deposit">Tiền đặt cọc (Triệu VNĐ)</label>
+                        <input type="number" step="0.5" id="deposit" name="deposit" class="form-control" value="{{ property.deposit if property else 0 }}" placeholder="Ví dụ: 20 (hoặc số tháng)">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="payment_cycle">Kỳ hạn thanh toán</label>
+                        <select id="payment_cycle" name="payment_cycle" class="form-control">
+                            {% for pc in rent_payment_cycles %}
+                                <option value="{{ pc.value }}" {% if property and property.payment_cycle.value == pc.value %}selected{% endif %}>
+                                    {{ pc.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="rent_purpose">Mục đích cho thuê</label>
+                        <select id="rent_purpose" name="rent_purpose" class="form-control">
+                            {% for rp in rent_purposes %}
+                                <option value="{{ rp.value }}" {% if property and property.rent_purpose.value == rp.value %}selected{% endif %}>
+                                    {{ rp.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="lease_term">Hợp đồng tối thiểu (tháng)</label>
+                        <input type="number" id="lease_term" name="lease_term" class="form-control" value="{{ property.lease_term if property else 12 }}" min="1" placeholder="12">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="electricity_cost">Chi phí tiền điện</label>
+                        <select id="electricity_cost" name="electricity_cost" class="form-control">
+                            {% for ec in electricity_costs %}
+                                <option value="{{ ec.value }}" {% if property and property.electricity_cost.value == ec.value %}selected{% endif %}>
+                                    {{ ec.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="water_cost">Chi phí tiền nước</label>
+                        <select id="water_cost" name="water_cost" class="form-control">
+                            {% for wc in water_costs %}
+                                <option value="{{ wc.value }}" {% if property and property.water_cost.value == wc.value %}selected{% endif %}>
+                                    {{ wc.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. ĐẶC ĐIỂM KỸ THUẬT & CÔNG NĂNG -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e2e8f0;">
+                    6. Đặc Điểm Kỹ Thuật & Tiện Nghi
+                </h3>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="orientation">Hướng bất động sản *</label>
+                        <select id="orientation" name="orientation" class="form-control" required>
+                            {% for o in orientations %}
+                                <option value="{{ o.value }}" {% if property and property.orientation.value == o.value %}selected{% endif %}>
+                                    {{ o.value|orientation_label }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -185,10 +323,21 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="furniture">Hiện trạng nội thất</label>
-                        <select id="furniture" name="furniture" class="form-control">
-                            {% for f in furnitures %}
-                                <option value="{{ f.value }}" {% if property and property.furniture.value == f.value %}selected{% endif %}>
+                        <label class="form-label" for="vehicle_access">Lộ giới / Phương tiện tiếp cận</label>
+                        <select id="vehicle_access" name="vehicle_access" class="form-control">
+                            {% for v in vehicle_accesses %}
+                                <option value="{{ v.value }}" {% if property and property.vehicle_access.value == v.value %}selected{% endif %}>
+                                    {{ v.value|clean_title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="furnished_level">Hiện trạng nội thất</label>
+                        <select id="furnished_level" name="furnished_level" class="form-control">
+                            {% for f in furnished_levels %}
+                                <option value="{{ f.value }}" {% if property and property.furnished_level.value == f.value %}selected{% endif %}>
                                     {{ f.value|clean_title }}
                                 </option>
                             {% endfor %}
@@ -197,16 +346,17 @@
 
                     <div class="form-group full-width">
                         <label class="form-label" for="function">Công năng phòng & Tiện ích</label>
-                        <input type="text" id="function" name="function" class="form-control" value="{{ property.function if property else '' }}" placeholder="Ví dụ: 4 phòng ngủ khép kín, 1 phòng khách lớn, gara ô tô, sân vườn">
+                        <input type="text" id="function" name="function" class="form-control" value="{{ property.function if property else '' }}" placeholder="Ví dụ: 4 phòng ngủ khép kín, 1 phòng khách lớn, gara ô tô, sân vườn BBQ">
                     </div>
 
                     <div class="form-group full-width">
                         <label class="form-label" for="description">Mô tả chi tiết & Thế mạnh bất động sản</label>
-                        <textarea id="description" name="description" class="form-control" rows="5" placeholder="Ghi chú về view, đường sá, phong thủy, tiềm năng sinh lời...">{{ property.description if property else '' }}</textarea>
+                        <textarea id="description" name="description" class="form-control" rows="5" placeholder="Ghi chú về view thung lũng, khu dân trí cao, pháp lý hoàn chỉnh, tiềm năng sinh lời hoặc điều kiện cho thuê...">{{ property.description if property else '' }}</textarea>
                     </div>
                 </div>
             </div>
 
+            <!-- NÚT HÀNH ĐỘNG -->
             <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 1px solid var(--border);">
                 <a href="{{ url_for('member.my_properties') }}" class="btn btn-secondary">Hủy bỏ</a>
                 <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">
@@ -216,4 +366,52 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function handleTransactionTypeChange() {
+        const transType = document.getElementById('transaction_type').value;
+        const saleSection = document.getElementById('saleSection');
+        const rentSection = document.getElementById('rentSection');
+        const unitSelect = document.getElementById('unit');
+        const lblPrice = document.getElementById('lblPrice');
+
+        if (transType === 'rent') {
+            // Hiển thị phần thuê, ẩn phần mua bán
+            saleSection.style.display = 'none';
+            rentSection.style.display = 'block';
+            lblPrice.innerText = 'Giá thuê hàng tháng *';
+
+            // Tự động chuyển đơn vị giá sang million_per_month nếu chưa chọn
+            if (unitSelect.value !== 'million_per_month') {
+                for (let i = 0; i < unitSelect.options.length; i++) {
+                    if (unitSelect.options[i].value === 'million_per_month') {
+                        unitSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        } else {
+            // Mua bán hoặc sang nhượng
+            saleSection.style.display = 'block';
+            rentSection.style.display = 'none';
+            lblPrice.innerText = 'Mức giá *';
+
+            // Nếu đang là million_per_month, chuyển về billion
+            if (unitSelect.value === 'million_per_month') {
+                for (let i = 0; i < unitSelect.options.length; i++) {
+                    if (unitSelect.options[i].value === 'billion') {
+                        unitSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        handleTransactionTypeChange();
+    });
+</script>
 {% endblock %}

@@ -153,7 +153,6 @@ class OwnershipForm(str, Enum):
 
     PRIVATE = "private"  # Sở hữu riêng
     SHARED = "shared"  # Đồng sở hữu / Chung
-    DECENTRALIZED = "decentralized"  # Phân quyền
     UNKNOWN = "unknown"  # Chưa xác định
 
 
@@ -162,7 +161,7 @@ class LandUseType(str, Enum):
     Mục đích sử dụng đất.
     """
 
-    RESIDENTIAL = "residential"  # Đất ở
+    RESIDENTIAL_LAND = "residential_land"  # Đất ở
     COMMERCIAL = "commercial"  # Đất thương mại
     INDUSTRIAL = "industrial"  # Đất công nghiệp
     AGRICULTURAL = "agricultural"  # Đất nông nghiệp
@@ -267,3 +266,16 @@ class WaterCostType(str, Enum):
     PER_PERSON = "per_person"  # Khoán theo đầu người
     INCLUDED = "included"  # Đã bao gồm trong giá thuê
     UNKNOWN = "unknown"  # Chưa xác định
+
+
+# ---------------------------------------------------------------------------
+# Enum giá cả (trước đây gọi là RealEstateProduct__Unit)
+# ---------------------------------------------------------------------------
+
+class PriceUnit(str, Enum):
+    """
+    Đơn vị tính giá bất động sản.
+    """
+    BILLION = "billion"                    # Tỷ đồng
+    MILLION = "million"                    # Triệu đồng
+    MILLION_PER_MONTH = "million_per_month"  # Triệu/tháng (cho thuê)

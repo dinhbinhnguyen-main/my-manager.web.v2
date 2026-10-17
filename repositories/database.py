@@ -39,8 +39,7 @@ def init_db():
                 approval_status TEXT NOT NULL DEFAULT 'draft',
                 pending_action TEXT NOT NULL DEFAULT 'none',
                 reject_reason TEXT DEFAULT '',
-                title TEXT DEFAULT '',
-                image_url TEXT DEFAULT '',
+                images TEXT NOT NULL DEFAULT '[]',
                 status TEXT NOT NULL DEFAULT 'hidden',
                 transaction_type TEXT NOT NULL DEFAULT 'sale',
                 province TEXT NOT NULL DEFAULT 'lam_dong',
@@ -51,17 +50,64 @@ def init_db():
                 area REAL NOT NULL DEFAULT 0.0,
                 price REAL NOT NULL DEFAULT 0.0,
                 unit TEXT NOT NULL DEFAULT 'billion',
-                legal TEXT NOT NULL DEFAULT 'private_construction_deed',
+                owner_name TEXT DEFAULT '',
+                owner_phone TEXT DEFAULT '',
+                map_url TEXT DEFAULT '',
+                ownership TEXT NOT NULL DEFAULT 'private',
+                land_use TEXT NOT NULL DEFAULT 'residential_land',
+                transaction_method TEXT NOT NULL DEFAULT 'notarized_contract',
+                orientation TEXT NOT NULL DEFAULT 'unknown',
                 structure REAL NOT NULL DEFAULT 0.0,
                 function TEXT DEFAULT '',
-                building_line TEXT NOT NULL DEFAULT 'motorbike_access_road',
-                furniture TEXT NOT NULL DEFAULT 'no_furniture',
+                vehicle_access TEXT NOT NULL DEFAULT 'motorbike',
+                furnished_level TEXT NOT NULL DEFAULT 'none',
+                deposit REAL NOT NULL DEFAULT 0.0,
+                payment_cycle TEXT NOT NULL DEFAULT 'monthly',
+                rent_purpose TEXT NOT NULL DEFAULT 'residential',
+                lease_term INTEGER NOT NULL DEFAULT 12,
+                electricity_cost TEXT NOT NULL DEFAULT 'state_rate',
+                water_cost TEXT NOT NULL DEFAULT 'state_rate',
                 description TEXT DEFAULT '',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             );
         """)
+
+        # Tự động cập nhật các cột mới và loại bỏ cột cũ nếu DB đã tồn tại
+        cursor.execute("PRAGMA table_info(properties);")
+        existing_cols = {row[1] for row in cursor.fetchall()}
+
+        if "title" in existing_cols:
+            try:
+                cursor.execute("ALTER TABLE properties DROP COLUMN title;")
+            except Exception:
+                pass
+
+        needed_cols = {
+            "orientation": "TEXT NOT NULL DEFAULT 'unknown'",
+            "ownership": "TEXT NOT NULL DEFAULT 'private'",
+            "land_use": "TEXT NOT NULL DEFAULT 'residential_land'",
+            "transaction_method": "TEXT NOT NULL DEFAULT 'notarized_contract'",
+            "vehicle_access": "TEXT NOT NULL DEFAULT 'motorbike'",
+            "furnished_level": "TEXT NOT NULL DEFAULT 'none'",
+            "images": "TEXT NOT NULL DEFAULT '[]'",
+            "owner_name": "TEXT DEFAULT ''",
+            "owner_phone": "TEXT DEFAULT ''",
+            "map_url": "TEXT DEFAULT ''",
+            "deposit": "REAL NOT NULL DEFAULT 0.0",
+            "payment_cycle": "TEXT NOT NULL DEFAULT 'monthly'",
+            "rent_purpose": "TEXT NOT NULL DEFAULT 'residential'",
+            "lease_term": "INTEGER NOT NULL DEFAULT 12",
+            "electricity_cost": "TEXT NOT NULL DEFAULT 'state_rate'",
+            "water_cost": "TEXT NOT NULL DEFAULT 'state_rate'",
+        }
+        for col_name, col_def in needed_cols.items():
+            if col_name not in existing_cols:
+                try:
+                    cursor.execute(f"ALTER TABLE properties ADD COLUMN {col_name} {col_def};")
+                except Exception:
+                    pass
 
         # Tạo chỉ mục tối ưu truy vấn
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_properties_pid ON properties(pid);")

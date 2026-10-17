@@ -26,20 +26,33 @@ class PropertyRepository:
             cursor.execute("""
                 INSERT INTO properties (
                     id, pid, user_id, approval_status, pending_action, reject_reason,
-                    title, image_url, status, transaction_type, province, district, ward, street,
-                    category, area, price, unit, legal, structure, function,
-                    building_line, furniture, description, created_at, updated_at
+                    images, status, transaction_type, province, district, ward, street,
+                    category, area, price, unit,
+                    owner_name, owner_phone, map_url,
+                    ownership, land_use, transaction_method,
+                    orientation, structure, function, vehicle_access, furnished_level,
+                    deposit, payment_cycle, rent_purpose, lease_term, electricity_cost, water_cost,
+                    description, created_at, updated_at
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?
+                    ?, ?, ?, ?,
+                    ?, ?, ?,
+                    ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?
                 )
             """, (
                 data["id"], data["pid"], data["user_id"], data["approval_status"], data["pending_action"], data["reject_reason"],
-                data["title"], data["image_url"], data["status"], data["transaction_type"], data["province"], data["district"], data["ward"], data["street"],
-                data["category"], data["area"], data["price"], data["unit"], data["legal"], data["structure"], data["function"],
-                data["building_line"], data["furniture"], data["description"], data["created_at"], data["updated_at"]
+                data["images"], data["status"], data["transaction_type"], data["province"], data["district"], data["ward"], data["street"],
+                data["category"], data["area"], data["price"], data["unit"],
+                data["owner_name"], data["owner_phone"], data["map_url"],
+                data["ownership"], data["land_use"], data["transaction_method"],
+                data["orientation"], data["structure"], data["function"], data["vehicle_access"], data["furnished_level"],
+                data.get("deposit", 0.0), data.get("payment_cycle", "monthly"), data.get("rent_purpose", "residential"),
+                data.get("lease_term", 12), data.get("electricity_cost", "state_rate"), data.get("water_cost", "state_rate"),
+                data["description"], data["created_at"], data["updated_at"]
             ))
             conn.commit()
             return prop.id
@@ -52,15 +65,24 @@ class PropertyRepository:
             cursor.execute("""
                 UPDATE properties SET
                     pid = ?, user_id = ?, approval_status = ?, pending_action = ?, reject_reason = ?,
-                    title = ?, image_url = ?, status = ?, transaction_type = ?, province = ?, district = ?, ward = ?, street = ?,
-                    category = ?, area = ?, price = ?, unit = ?, legal = ?, structure = ?, function = ?,
-                    building_line = ?, furniture = ?, description = ?, updated_at = ?
+                    images = ?, status = ?, transaction_type = ?, province = ?, district = ?, ward = ?, street = ?,
+                    category = ?, area = ?, price = ?, unit = ?,
+                    owner_name = ?, owner_phone = ?, map_url = ?,
+                    ownership = ?, land_use = ?, transaction_method = ?,
+                    orientation = ?, structure = ?, function = ?, vehicle_access = ?, furnished_level = ?,
+                    deposit = ?, payment_cycle = ?, rent_purpose = ?, lease_term = ?, electricity_cost = ?, water_cost = ?,
+                    description = ?, updated_at = ?
                 WHERE id = ?
             """, (
                 data["pid"], data["user_id"], data["approval_status"], data["pending_action"], data["reject_reason"],
-                data["title"], data["image_url"], data["status"], data["transaction_type"], data["province"], data["district"], data["ward"], data["street"],
-                data["category"], data["area"], data["price"], data["unit"], data["legal"], data["structure"], data["function"],
-                data["building_line"], data["furniture"], data["description"], data["updated_at"],
+                data["images"], data["status"], data["transaction_type"], data["province"], data["district"], data["ward"], data["street"],
+                data["category"], data["area"], data["price"], data["unit"],
+                data["owner_name"], data["owner_phone"], data["map_url"],
+                data["ownership"], data["land_use"], data["transaction_method"],
+                data["orientation"], data["structure"], data["function"], data["vehicle_access"], data["furnished_level"],
+                data.get("deposit", 0.0), data.get("payment_cycle", "monthly"), data.get("rent_purpose", "residential"),
+                data.get("lease_term", 12), data.get("electricity_cost", "state_rate"), data.get("water_cost", "state_rate"),
+                data["description"], data["updated_at"],
                 data["id"]
             ))
             conn.commit()
@@ -119,7 +141,13 @@ class PropertyRepository:
         category: Optional[str] = None,
         transaction_type: Optional[str] = None,
         ward: Optional[str] = None,
-        search: Optional[str] = None
+        orientation: Optional[str] = None,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_area: Optional[float] = None,
+        max_area: Optional[float] = None,
+        search: Optional[str] = None,
+        sort_by: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Lấy danh sách BĐS đã duyệt kèm thông tin người đăng (phone, logo) để bảo vệ quyền khai thác khách hàng.
@@ -145,12 +173,37 @@ class PropertyRepository:
         if ward:
             query += " AND p.ward = ?"
             params.append(ward)
+        if orientation:
+            query += " AND p.orientation = ?"
+            params.append(orientation)
+        if min_price is not None:
+            query += " AND p.price >= ?"
+            params.append(min_price)
+        if max_price is not None:
+            query += " AND p.price <= ?"
+            params.append(max_price)
+        if min_area is not None:
+            query += " AND p.area >= ?"
+            params.append(min_area)
+        if max_area is not None:
+            query += " AND p.area <= ?"
+            params.append(max_area)
         if search:
-            query += " AND (p.title LIKE ? OR p.street LIKE ? OR p.description LIKE ?)"
+            query += " AND (p.street LIKE ? OR p.description LIKE ?)"
             term = f"%{search}%"
-            params.extend([term, term, term])
+            params.extend([term, term])
 
-        query += " ORDER BY p.updated_at DESC"
+        # Sắp xếp
+        if sort_by == "price_asc":
+            query += " ORDER BY p.price ASC, p.updated_at DESC"
+        elif sort_by == "price_desc":
+            query += " ORDER BY p.price DESC, p.updated_at DESC"
+        elif sort_by == "area_desc":
+            query += " ORDER BY p.area DESC, p.updated_at DESC"
+        elif sort_by == "area_asc":
+            query += " ORDER BY p.area ASC, p.updated_at DESC"
+        else:
+            query += " ORDER BY p.updated_at DESC"
 
         with get_db_connection() as conn:
             cursor = conn.cursor()

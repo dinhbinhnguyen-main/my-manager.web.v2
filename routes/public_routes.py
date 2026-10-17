@@ -5,7 +5,8 @@ from property_enums import (
     TransactionType,
     WardType,
     ProvinceType,
-    DistrictType
+    DistrictType,
+    Orientation
 )
 
 public_bp = Blueprint("public", __name__)
@@ -16,18 +17,40 @@ def index():
     category = request.args.get("category")
     transaction_type = request.args.get("transaction_type")
     ward = request.args.get("ward")
+    orientation = request.args.get("orientation")
     search = request.args.get("search")
+    sort_by = request.args.get("sort_by", "newest")
+
+    def parse_float(val):
+        if not val:
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+
+    min_price = parse_float(request.args.get("min_price"))
+    max_price = parse_float(request.args.get("max_price"))
+    min_area = parse_float(request.args.get("min_area"))
+    max_area = parse_float(request.args.get("max_area"))
 
     properties = property_service.get_public_listings(
         category=category,
         transaction_type=transaction_type,
         ward=ward,
-        search=search
+        orientation=orientation,
+        min_price=min_price,
+        max_price=max_price,
+        min_area=min_area,
+        max_area=max_area,
+        search=search,
+        sort_by=sort_by
     )
 
     categories = list(PropertyType)
     transaction_types = list(TransactionType)
     wards = list(WardType)
+    orientations = [o for o in Orientation if o != Orientation.UNKNOWN]
 
     return render_template(
         "public/index.html",
@@ -35,9 +58,16 @@ def index():
         categories=categories,
         transaction_types=transaction_types,
         wards=wards,
+        orientations=orientations,
         current_category=category,
         current_transaction_type=transaction_type,
         current_ward=ward,
+        current_orientation=orientation,
+        current_min_price=request.args.get("min_price", ""),
+        current_max_price=request.args.get("max_price", ""),
+        current_min_area=request.args.get("min_area", ""),
+        current_max_area=request.args.get("max_area", ""),
+        current_sort_by=sort_by,
         search_query=search or ""
     )
 

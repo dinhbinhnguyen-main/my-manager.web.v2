@@ -3,11 +3,12 @@
 {% block title %}{{ property.title }} | Chi Tiết Bất Động Sản{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 1.5rem;">
-    <a href="{{ url_for('public.index') }}" class="btn btn-sm btn-outline">&larr; Quay lại danh sách sản phẩm</a>
-</div>
+<div class="container" style="padding-top: 1.5rem; padding-bottom: 3rem;">
+    <div style="margin-bottom: 1.5rem;">
+        <a href="{{ url_for('public.index') }}" class="btn btn-sm btn-outline">&larr; Quay lại danh sách sản phẩm</a>
+    </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
     <!-- CỘT TRÁI: HÌNH ẢNH & THÔNG SỐ KỸ THUẬT -->
     <div>
         <div class="panel" style="padding: 0; overflow: hidden;">
@@ -46,13 +47,13 @@
                     </div>
 
                     <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
-                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Vị trí đường / Hẻm</div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.building_line|clean_title }}</div>
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Hướng</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.orientation|orientation_label }}</div>
                     </div>
 
                     <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
-                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Pháp lý</div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.legal|clean_title }}</div>
+                        <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Lộ giới / Phương tiện</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ (property.vehicle_access or property.building_line)|clean_title }}</div>
                     </div>
 
                     <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
@@ -62,8 +63,67 @@
 
                     <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
                         <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Nội thất bàn giao</div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.furniture|clean_title }}</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ (property.furnished_level or property.furniture)|clean_title }}</div>
                     </div>
+
+                    {% if property.transaction_type == 'rent' %}
+                        {% if property.deposit %}
+                            <div style="background: #f0fdf4; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid #bbf7d0;">
+                                <div style="font-size: 0.75rem; color: #166534; text-transform: uppercase; font-weight: 600;">Tiền đặt cọc</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">{{ property.deposit }} Triệu</div>
+                            </div>
+                        {% endif %}
+
+                        {% if property.payment_cycle %}
+                            <div style="background: #f0fdf4; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid #bbf7d0;">
+                                <div style="font-size: 0.75rem; color: #166534; text-transform: uppercase; font-weight: 600;">Kỳ thanh toán</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">{{ property.payment_cycle|clean_title }}</div>
+                            </div>
+                        {% endif %}
+
+                        {% if property.rent_purpose %}
+                            <div style="background: #f0fdf4; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid #bbf7d0;">
+                                <div style="font-size: 0.75rem; color: #166534; text-transform: uppercase; font-weight: 600;">Mục đích thuê</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">{{ property.rent_purpose|clean_title }}</div>
+                            </div>
+                        {% endif %}
+
+                        {% if property.lease_term %}
+                            <div style="background: #f0fdf4; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid #bbf7d0;">
+                                <div style="font-size: 0.75rem; color: #166534; text-transform: uppercase; font-weight: 600;">Hợp đồng tối thiểu</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">{{ property.lease_term }} tháng</div>
+                            </div>
+                        {% endif %}
+
+                        {% if property.electricity_cost %}
+                            <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Chi phí tiền điện</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.electricity_cost|clean_title }}</div>
+                            </div>
+                        {% endif %}
+
+                        {% if property.water_cost %}
+                            <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Chi phí tiền nước</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.water_cost|clean_title }}</div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Hình thức sở hữu</div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ (property.ownership or property.legal)|clean_title }}</div>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Mục đích sử dụng đất</div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.land_use|clean_title }}</div>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                            <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Phương thức giao dịch</div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ property.transaction_method|clean_title }}</div>
+                        </div>
+                    {% endif %}
 
                     <div style="background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid var(--border);">
                         <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Địa chỉ hành chính</div>
@@ -121,5 +181,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 {% endblock %}

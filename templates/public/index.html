@@ -1,142 +1,314 @@
 {% extends "base.html" %}
 
-{% block title %}Sàn Bất Động Sản Đà Lạt | Dữ Liệu Tập Trung & Minh Bạch{% endblock %}
+{% block title %}URBN • Bất Động Sản Đà Lạt | Tìm Kiếm & Đầu Tư Minh Bạch{% endblock %}
 
 {% block content %}
-<div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; border-radius: 1rem; padding: 2.5rem 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
-    <div style="max-width: 800px;">
-        <span class="badge badge-warning" style="margin-bottom: 0.75rem;">Hệ thống tập trung</span>
-        <h1 style="font-size: 2.2rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.75rem;">
-            Kho Dữ Liệu Bất Động Sản Đà Lạt
-        </h1>
-        <p style="color: #cbd5e1; font-size: 1.05rem; margin-bottom: 1.5rem;">
-            Toàn bộ sản phẩm được kiểm định chất lượng và cá nhân hóa số hotline + logo của nhân sự phụ trách.
-        </p>
-
-        <!-- BỘ LỌC TÌM KIẾM -->
-        <form method="GET" action="{{ url_for('public.index') }}" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); padding: 1.25rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.2);">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
-                <div>
-                    <input type="text" name="search" class="form-control" placeholder="Từ khóa, tên đường..." value="{{ search_query }}">
+<div class="urbn-layout-container">
+    <!-- CỘT TRÁI: STICKY FILTER SIDEBAR -->
+    <aside class="urbn-sidebar">
+        <form id="filterForm" method="GET" action="{{ url_for('public.index') }}" class="urbn-filter-form">
+            <!-- 1. SEGMENTED TRANSACTION TOGGLE -->
+            <div class="urbn-filter-section" style="padding-top: 0;">
+                <div class="urbn-segmented-group">
+                    <button type="button"
+                        class="urbn-segmented-btn {% if not current_transaction_type %}active{% endif %}"
+                        onclick="setTransactionType('')">Tất cả</button>
+                    <button type="button"
+                        class="urbn-segmented-btn {% if current_transaction_type == 'sale' %}active{% endif %}"
+                        onclick="setTransactionType('sale')">Bán</button>
+                    <button type="button"
+                        class="urbn-segmented-btn {% if current_transaction_type == 'rent' %}active{% endif %}"
+                        onclick="setTransactionType('rent')">Cho thuê</button>
                 </div>
+                <input type="hidden" name="transaction_type" id="inputTransactionType"
+                    value="{{ current_transaction_type or '' }}">
+            </div>
 
-                <div>
-                    <select name="category" class="form-control">
-                        <option value="">Tất cả loại hình</option>
-                        {% for cat in categories %}
-                            <option value="{{ cat.value }}" {% if current_category == cat.value %}selected{% endif %}>
-                                {{ cat.value|clean_title }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <select name="transaction_type" class="form-control">
-                        <option value="">Loại giao dịch</option>
-                        {% for t in transaction_types %}
-                            <option value="{{ t.value }}" {% if current_transaction_type == t.value %}selected{% endif %}>
-                                {{ t.value|upper }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <select name="ward" class="form-control">
-                        <option value="">Khu vực Phường / Xã</option>
-                        {% for w in wards %}
-                            <option value="{{ w.value }}" {% if current_ward == w.value %}selected{% endif %}>
-                                {{ w.value|clean_title }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div style="display: flex; gap: 0.5rem;">
-                    <button type="submit" class="btn btn-warning" style="flex: 1; font-weight: 700;">Tìm kiếm</button>
-                    <a href="{{ url_for('public.index') }}" class="btn btn-secondary">Đặt lại</a>
+            <!-- TỪ KHÓA TÌM KIẾM -->
+            <div class="urbn-filter-section">
+                <label class="urbn-filter-label" for="searchInput">Tìm kiếm vị trí, tên đường</label>
+                <div class="urbn-search-input-wrap">
+                    <span class="urbn-search-icon">🔍</span>
+                    <input type="text" id="searchInput" name="search" class="urbn-input"
+                        placeholder="Phan Đình Phùng, Phường 2..." value="{{ search_query }}">
                 </div>
             </div>
-        </form>
-    </div>
-</div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h2 style="font-size: 1.4rem; font-weight: 700; color: #0f172a;">
-        Bất Động Sản Đang Mở Bán ({{ properties|length }})
-    </h2>
-    <span style="font-size: 0.85rem; color: #64748b;">Chỉ hiển thị các sản phẩm đã được Ban Quản Lý phê duyệt</span>
-</div>
-
-{% if properties %}
-    <div class="property-grid">
-        {% for prop in properties %}
-            <div class="property-card">
-                <div class="property-card-img-wrapper">
-                    {% if prop.image_url %}
-                        <img src="{{ prop.image_url }}" alt="{{ prop.title }}" class="property-card-img">
-                    {% else %}
-                        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #334155, #1e293b); color: #cbd5e1; font-size: 2.5rem;">
-                            🏡
-                        </div>
-                    {% endif %}
-                    
-                    <div class="property-card-badges">
-                        <span class="badge badge-success">{{ prop.transaction_type|upper }}</span>
-                        <span class="badge badge-primary">{{ prop.category|clean_title }}</span>
+            <!-- 2. LOẠI HÌNH BẤT ĐỘNG SẢN (CHECKBOX LIST) -->
+            <div class="urbn-filter-section">
+                <label class="urbn-filter-label">Loại hình bất động sản</label>
+                <div class="urbn-checkbox-list">
+                    {% for cat in categories %}
+                    <label class="urbn-checkbox-item">
+                        <input type="radio" name="category" value="{{ cat.value }}" {% if current_category==cat.value
+                            %}checked{% endif %} onchange="this.form.submit()">
+                        <span class="urbn-checkbox-custom"></span>
+                        <span class="urbn-checkbox-text">{{ cat.value|clean_title }}</span>
+                    </label>
+                    {% endfor %}
+                    {% if current_category %}
+                    <div style="margin-top: 0.4rem;">
+                        <a href="{{ url_for('public.index', transaction_type=current_transaction_type, ward=current_ward) }}"
+                            class="urbn-clear-category-link">✕ Bỏ chọn loại hình</a>
                     </div>
+                    {% endif %}
+                </div>
+            </div>
 
-                    <div class="property-card-price-tag">
-                        {{ prop.price }} {{ prop.unit|clean_title }}
+            <!-- 3. KHOẢNG GIÁ (HISTOGRAM + INPUTS) -->
+            <div class="urbn-filter-section">
+                <div class="urbn-section-header">
+                    <label class="urbn-filter-label">Khoảng giá (Tỷ VNĐ)</label>
+                </div>
+                <!-- Input Min - Max -->
+                <div class="urbn-range-inputs">
+                    <div class="urbn-range-field">
+                        <span class="urbn-range-sublabel">Tối thiểu</span>
+                        <div class="urbn-input-affix">
+                            <input type="number" step="0.1" name="min_price" class="urbn-input" placeholder="0"
+                                value="{{ current_min_price }}">
+                            <span class="urbn-affix-text">Tỷ</span>
+                        </div>
+                    </div>
+                    <div class="urbn-range-field">
+                        <span class="urbn-range-sublabel">Tối đa</span>
+                        <div class="urbn-input-affix">
+                            <input type="number" step="0.1" name="max_price" class="urbn-input" placeholder="100"
+                                value="{{ current_max_price }}">
+                            <span class="urbn-affix-text">Tỷ</span>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="property-card-body">
-                    <h3 class="property-card-title">
-                        <a href="{{ url_for('public.property_detail', property_id=prop.id) }}" style="text-decoration: none; color: inherit;">
+            <!-- 4. DIỆN TÍCH SÀN (FLOOR AREA) -->
+            <div class="urbn-filter-section">
+                <label class="urbn-filter-label">Diện tích sàn (m²)</label>
+                <div class="urbn-range-inputs">
+                    <div class="urbn-range-field">
+                        <span class="urbn-range-sublabel">Tối thiểu</span>
+                        <div class="urbn-input-affix">
+                            <input type="number" step="1" name="min_area" class="urbn-input" placeholder="20"
+                                value="{{ current_min_area }}">
+                            <span class="urbn-affix-text">m²</span>
+                        </div>
+                    </div>
+                    <div class="urbn-range-field">
+                        <span class="urbn-range-sublabel">Tối đa</span>
+                        <div class="urbn-input-affix">
+                            <input type="number" step="1" name="max_area" class="urbn-input" placeholder="1000"
+                                value="{{ current_max_area }}">
+                            <span class="urbn-affix-text">m²</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. HƯỚNG NHÀ (ORIENTATION) -->
+            <div class="urbn-filter-section">
+                <label class="urbn-filter-label" for="selectOrientation">Hướng phong thủy</label>
+                <select id="selectOrientation" name="orientation" class="urbn-select">
+                    <option value="">Tất cả hướng</option>
+                    {% for ori in orientations %}
+                    <option value="{{ ori.value }}" {% if current_orientation==ori.value %}selected{% endif %}>
+                        {{ ori.value|orientation_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 6. KHU VỰC PHƯỜNG / XÃ ĐÀ LẠT -->
+            <div class="urbn-filter-section">
+                <label class="urbn-filter-label" for="selectWard">Khu vực Phường / Xã</label>
+                <select id="selectWard" name="ward" class="urbn-select">
+                    <option value="">Tất cả khu vực Đà Lạt</option>
+                    {% for w in wards %}
+                    <option value="{{ w.value }}" {% if current_ward==w.value %}selected{% endif %}>
+                        {{ w.value|clean_title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- HIDDEN SORT -->
+            <input type="hidden" name="sort_by" id="inputSortBy" value="{{ current_sort_by }}">
+
+            <!-- ACTION BUTTONS -->
+            <div class="urbn-sidebar-actions">
+                <button type="submit" class="urbn-btn-apply">Áp dụng lọc</button>
+                <a href="{{ url_for('public.index') }}" class="urbn-btn-reset">Đặt lại</a>
+            </div>
+        </form>
+    </aside>
+
+    <!-- CỘT PHẢI: BANNER BẢN ĐỒ & LƯỚI BẤT ĐỘNG SẢN -->
+    <section class="urbn-content">
+        <!-- 1. BẢN ĐỒ MONOCHROME MINI-MAP BANNER ĐÀ LẠT -->
+
+
+        <!-- 2. TOOLBAR SẮP XẾP & VIEW SWITCHER -->
+        <div class="urbn-toolbar">
+            <div class="urbn-sort-wrap">
+                <span class="urbn-sort-label">Sắp xếp:</span>
+                <select class="urbn-sort-select" onchange="applySorting(this.value)">
+                    <option value="newest" {% if current_sort_by=='newest' %}selected{% endif %}>Mới nhất ▾</option>
+                    <option value="price_asc" {% if current_sort_by=='price_asc' %}selected{% endif %}>Giá: Thấp đến Cao
+                        ▾</option>
+                    <option value="price_desc" {% if current_sort_by=='price_desc' %}selected{% endif %}>Giá: Cao đến
+                        Thấp ▾</option>
+                    <option value="area_desc" {% if current_sort_by=='area_desc' %}selected{% endif %}>Diện tích: Lớn
+                        nhất ▾</option>
+                    <option value="area_asc" {% if current_sort_by=='area_asc' %}selected{% endif %}>Diện tích: Nhỏ nhất
+                        ▾</option>
+                </select>
+            </div>
+
+            <div class="urbn-toolbar-right">
+                <span class="urbn-result-count">Đang hiển thị <strong>{{ properties|length }}</strong> bất động
+                    sản</span>
+                <div class="urbn-view-modes">
+                    <button type="button" class="urbn-view-btn active" title="Lưới 3 cột">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <rect x="1" y="1" width="3.5" height="14" rx="0.5" />
+                            <rect x="6.25" y="1" width="3.5" height="14" rx="0.5" />
+                            <rect x="11.5" y="1" width="3.5" height="14" rx="0.5" />
+                        </svg>
+                    </button>
+                    <button type="button" class="urbn-view-btn" title="Lưới 2 cột">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <rect x="1" y="1" width="6" height="14" rx="0.5" />
+                            <rect x="9" y="1" width="6" height="14" rx="0.5" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. LƯỚI CARD BẤT ĐỘNG SẢN (3 CỘT CHUẨN URBN) -->
+        {% if properties %}
+        <div class="urbn-property-grid">
+            {% for prop in properties %}
+            <article class="urbn-card">
+                <!-- Media Card Container -->
+                <div class="urbn-card-media">
+                    <a href="{{ url_for('public.property_detail', property_id=prop.id) }}" class="urbn-card-img-link">
+                        {% if prop.image_url %}
+                        <img src="{{ prop.image_url }}" alt="{{ prop.title }}" class="urbn-card-img" loading="lazy">
+                        {% else %}
+                        <div class="urbn-card-img-placeholder">
+                            <span style="font-size: 2.2rem; opacity: 0.6;">🏡</span>
+                        </div>
+                        {% endif %}
+                    </a>
+
+                    <!-- Badges mờ tinh tế -->
+                    <div class="urbn-card-tag-pill">
+                        {{ prop.transaction_type|upper }}
+                    </div>
+                    <!-- <div class="urbn-card-tag-pill">
+                        {{ prop.ownership|upper }}
+                    </div> -->
+
+
+                    <!-- Nút Yêu thích (Heart) -->
+                    <button type="button" class="urbn-card-heart-btn" onclick="toggleFavorite(this, '{{ prop.id }}')"
+                        title="Lưu tin">
+                        <svg class="urbn-heart-svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Card Content -->
+                <div class="urbn-card-body">
+                    <!-- Hàng 1: Giá tiền nổi bật & Nút xem chi tiết -->
+                    <div class="urbn-card-price-row">
+                        <div class="urbn-card-price">
+                            {{ prop.price }} {{ prop.unit|clean_title }}
+                        </div>
+                    </div>
+
+                    <!-- Hàng 2: Metadata ngắn gọn, 1 dòng ngăn cách bằng dấu chấm giữa • -->
+                    <div class="urbn-card-specs">
+                        <span>{{ prop.area }} m²</span>
+                        <span class="urbn-spec-dot">•</span>
+                        <span>{{ prop.ward|clean_title }}</span>
+                        {% if prop.orientation and prop.orientation != 'unknown' %}
+                        <span class="urbn-spec-dot">•</span>
+                        <span>Hướng {{ prop.orientation|orientation_label }}</span>
+                        {% endif %}
+                        {% if prop.structure %}
+                        <span class="urbn-spec-dot">•</span>
+                        <span>{{ prop.structure }} tầng</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Hàng 3: Tiêu đề BĐS thanh lịch -->
+                    <h3 class="urbn-card-title">
+                        <a href="{{ url_for('public.property_detail', property_id=prop.id) }}">
                             {{ prop.title }}
                         </a>
                     </h3>
 
-                    <div class="property-card-meta">
-                        <span>📐 {{ prop.area }} m²</span>
-                        <span>📍 {{ prop.ward|clean_title }}</span>
-                        {% if prop.structure %}
-                            <span>🏢 {{ prop.structure }} tầng</span>
-                        {% endif %}
-                    </div>
-
-                    <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                        {{ prop.description or 'Thông tin chi tiết liên hệ chuyên viên phụ trách bên dưới.' }}
-                    </p>
-
-                    <!-- KHỐI CÁ NHÂN HÓA KINH DOANH (LEAD PROTECTION) -->
-                    <div class="lead-protection-banner">
-                        <div class="lead-author-info">
-                            <img src="{{ prop.author_logo }}" alt="{{ prop.author_name }}" class="lead-author-logo">
-                            <div class="lead-author-text">
-                                <div class="lead-author-name">Môi giới: {{ prop.author_name }}</div>
-                                <div class="lead-author-phone">📞 {{ prop.author_phone or 'Liên hệ hotline' }}</div>
+                    <!-- Hàng 4: Khối bảo vệ quyền lợi môi giới (Lead Protection) -->
+                    <div class="urbn-card-agent-row">
+                        <div class="urbn-agent-profile">
+                            <img src="{{ prop.author_logo }}" alt="{{ prop.author_name }}" class="urbn-agent-avatar">
+                            <div class="urbn-agent-details">
+                                <div class="urbn-agent-name">{{ prop.author_name }}</div>
+                                <div class="urbn-agent-role">Chuyên viên tư vấn</div>
                             </div>
                         </div>
-
                         {% if prop.author_phone %}
-                            <a href="tel:{{ prop.author_phone }}" class="lead-call-btn">
-                                Gọi ngay
-                            </a>
+                        <a href="tel:{{ prop.author_phone }}" class="urbn-btn-call"
+                            title="Gọi trực tiếp {{ prop.author_phone }}">
+                            Gọi ngay
+                        </a>
                         {% endif %}
                     </div>
                 </div>
-            </div>
-        {% endfor %}
-    </div>
-{% else %}
-    <div class="panel" style="text-align: center; padding: 4rem 2rem;">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-        <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">Không tìm thấy bất động sản phù hợp</h3>
-        <p style="color: #64748b; margin-bottom: 1.5rem;">Hãy thử xóa bộ lọc tìm kiếm hoặc quay lại sau khi Ban Quản Lý phê duyệt thêm sản phẩm mới.</p>
-        <a href="{{ url_for('public.index') }}" class="btn btn-primary">Xem tất cả bài đăng</a>
-    </div>
-{% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Trạng thái trống tinh gọn -->
+        <div class="urbn-empty-state">
+            <div class="urbn-empty-icon">🏷️</div>
+            <h3 class="urbn-empty-title">Không tìm thấy bất động sản phù hợp</h3>
+            <p class="urbn-empty-desc">Hãy thử điều chỉnh bộ lọc giá, diện tích hoặc khu vực để xem thêm các sản phẩm
+                đang giao dịch tại Đà Lạt.</p>
+            <a href="{{ url_for('public.index') }}" class="urbn-btn-solid">Xem tất cả sản phẩm</a>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function setTransactionType(val) {
+        document.getElementById('inputTransactionType').value = val;
+        document.getElementById('filterForm').submit();
+    }
+
+    function applySorting(sortVal) {
+        document.getElementById('inputSortBy').value = sortVal;
+        document.getElementById('filterForm').submit();
+    }
+
+    function toggleFavorite(btn, propId) {
+        btn.classList.toggle('favorited');
+        const svg = btn.querySelector('.urbn-heart-svg');
+        if (btn.classList.contains('favorited')) {
+            svg.setAttribute('fill', '#ef4444');
+            svg.setAttribute('stroke', '#ef4444');
+        } else {
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+        }
+    }
+</script>
 {% endblock %}

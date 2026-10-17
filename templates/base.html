@@ -1,84 +1,109 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Hệ thống Quản lý Bất động sản Nội bộ{% endblock %}</title>
+    <title>{% block title %}URBN • Sàn Bất Động Sản Đà Lạt{% endblock %}</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
-    <nav class="navbar">
-        <div class="navbar-container">
-            <a href="{{ url_for('public.index') }}" class="brand">
-                <span>🏡 RealEstate Dalat</span>
-                <span class="brand-badge">Internal System</span>
-            </a>
+    <!-- URBN MINIMALIST NAVBAR -->
+    <header class="urbn-header">
+        <div class="urbn-header-container">
+            <!-- Left: Primary Categories Navigation -->
+            <nav class="urbn-nav-left">
+                <a href="{{ url_for('public.index', category='villa') }}" class="urbn-nav-link">Biệt thự</a>
+                <a href="{{ url_for('public.index', category='townhouse') }}" class="urbn-nav-link">Nhà phố</a>
+                <a href="{{ url_for('public.index', category='apartment') }}" class="urbn-nav-link">Căn hộ</a>
+                <a href="{{ url_for('public.index', category='land_plot') }}" class="urbn-nav-link">Đất nền</a>
+                <a href="{{ url_for('public.index', category='commercial') }}" class="urbn-nav-link">Thương mại</a>
+            </nav>
 
-            <ul class="nav-links">
-                <li><a href="{{ url_for('public.index') }}">Trang chủ BĐS</a></li>
-                
+            <!-- Center: Distinctive Editorial Brand Logo -->
+            <div class="urbn-brand-center">
+                <a href="{{ url_for('public.index') }}" class="urbn-logo">KB</a>
+            </div>
+
+            <!-- Right: Secondary links & User actions -->
+            <div class="urbn-nav-right">
                 {% if current_user %}
-                    <li><a href="{{ url_for('member.my_properties') }}">BĐS của tôi</a></li>
-                    
-                    {% if current_user.role.value in ['manager', 'admin'] %}
-                        <li>
-                            <a href="{{ url_for('manager.approval_list') }}">
-                                Duyệt bài 
-                                {% if current_user.role.value == 'manager' %}
-                                    <span style="font-size:0.75rem; opacity:0.8;">({{ current_user.group_id }})</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                    {% endif %}
+                <a href="{{ url_for('member.my_properties') }}" class="urbn-nav-link">BĐS của tôi</a>
 
-                    {% if current_user.role.value == 'admin' %}
-                        <li><a href="{{ url_for('admin.user_management') }}">Quản lý nhân sự</a></li>
+                {% if current_user.role.value in ['manager', 'admin'] %}
+                <a href="{{ url_for('manager.approval_list') }}" class="urbn-nav-link">
+                    Duyệt bài
+                    {% if current_user.role.value == 'manager' %}
+                    <span class="urbn-group-pill">{{ current_user.group_id }}</span>
                     {% endif %}
-
-                    <li class="nav-user">
-                        <a href="{{ url_for('auth.profile') }}" style="display:flex; align-items:center; gap:0.5rem; padding:0;">
-                            {% if current_user.logo_url %}
-                                <img src="{{ current_user.logo_url }}" alt="Logo" class="user-avatar">
-                            {% else %}
-                                <img src="{{ url_for('static', filename='uploads/default_logo.png') }}" alt="Logo" class="user-avatar">
-                            {% endif %}
-                            <div style="line-height:1.2;">
-                                <div style="font-weight:700; font-size:0.85rem; color:#fff;">{{ current_user.username }}</div>
-                                <div style="font-size:0.7rem; color:#fbbf24;">{{ current_user.role.value|upper }}</div>
-                            </div>
-                        </a>
-                        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.4); margin-left:0.5rem;">
-                            Đăng xuất
-                        </a>
-                    </li>
-                {% else %}
-                    <li><a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline" style="color:#fff;">Đăng nhập</a></li>
-                    <li><a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-primary">Đăng ký nhân sự</a></li>
+                </a>
                 {% endif %}
-            </ul>
-        </div>
-    </nav>
 
-    <main class="container">
+                {% if current_user.role.value == 'admin' %}
+                <a href="{{ url_for('admin.user_management') }}" class="urbn-nav-link">Quản trị</a>
+                {% endif %}
+
+                <div class="urbn-user-menu">
+                    <a href="{{ url_for('auth.profile') }}" class="urbn-user-profile-link" title="Hồ sơ cá nhân">
+                        {% if current_user.logo_url %}
+                        <img src="{{ current_user.logo_url }}" alt="Logo" class="urbn-avatar">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='uploads/default_logo.png') }}" alt="Logo"
+                            class="urbn-avatar">
+                        {% endif %}
+                        <span class="urbn-username">{{ current_user.username }}</span>
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="urbn-btn-logout" title="Đăng xuất">
+                        Đăng xuất
+                    </a>
+                </div>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="urbn-btn-outline">Đăng nhập</a>
+                <a href="{{ url_for('auth.register') }}" class="urbn-btn-solid">Đăng ký</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="urbn-main">
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        <span>{{ message }}</span>
-                        <button onclick="this.parentElement.remove()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:inherit;">&times;</button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        <div class="urbn-flash-wrapper">
+            {% for category, message in messages %}
+            <div class="urbn-alert urbn-alert-{{ category }}">
+                <span>{{ message }}</span>
+                <button onclick="this.parentElement.remove()" class="urbn-alert-close">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer">
-        <p>&copy; 2026 Hệ thống Quản lý Bất động sản Nội bộ. Phân quyền và Bảo vệ Quyền lợi Kinh doanh.</p>
+    <!-- MINIMALIST EDITORIAL FOOTER -->
+    <footer class="urbn-footer">
+        <div class="urbn-footer-inner">
+            <div class="urbn-footer-brand">
+                <span class="urbn-logo-sm">KB</span>
+                <!-- <span class="urbn-footer-tagline">Nền tảng Quản lý & Phân phối Bất động sản Đà Lạt</span> -->
+            </div>
+            <div class="urbn-footer-meta">
+                <p>&copy; 2026 KB Real Estate.</p>
+            </div>
+        </div>
     </footer>
 
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>
